@@ -1,6 +1,6 @@
 {
   "name": "portra",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Portra - secure multi-customer portal workspace",
   "main": "electron/main.js",
   "scripts": {

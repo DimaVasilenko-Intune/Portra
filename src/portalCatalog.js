@@ -1,7 +1,7 @@
 export const PORTAL_CATALOG = [
   // Use real favicons where they are stable; fall back to bundled SVGs where not.
-  { id: 'azure', name: 'Azure', url: 'https://portal.azure.com', icon: 'https://portal.azure.com/favicon.ico' },
-  { id: 'intune', name: 'Intune', url: 'https://intune.microsoft.com', icon: 'https://intune.microsoft.com/favicon.ico' },
+  { id: 'azure', name: 'Azure', url: 'https://portal.azure.com', icon: './portals/azure.svg' },
+  { id: 'intune', name: 'Intune', url: 'https://intune.microsoft.com', icon: './portals/intune.svg' },
   { id: 'admin-center', name: 'Admin Center', url: 'https://admin.microsoft.com', icon: './portals/admin-center.svg' },
   { id: 'security-center', name: 'Security Center', url: 'https://security.microsoft.com', icon: 'https://security.microsoft.com/favicon.ico' },
   { id: 'entra', name: 'Entra', url: 'https://entra.microsoft.com', icon: './portals/entra.svg' },
