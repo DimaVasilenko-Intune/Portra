@@ -54,7 +54,7 @@ export function CustomerModal({ customers = [], onSubmit, onCancel }) {
         <div className="modeGrid modeGrid3">
           <label className={`modeCard ${mode === 'standard' ? 'active' : ''}`}>
             <input type="radio" name="mode" checked={mode === 'standard'} onChange={() => setMode('standard')} />
-            <div><strong>Standard</strong><span>Azure, Intune, Admin, Security, Entra</span></div>
+            <div><strong>Standard</strong><span>Azure, Intune, Admin, Security, Entra, Exchange, SharePoint</span></div>
           </label>
           <label className={`modeCard ${mode === 'fresh' ? 'active' : ''}`}>
             <input type="radio" name="mode" checked={mode === 'fresh'} onChange={() => setMode('fresh')} />
@@ -87,10 +87,30 @@ export function CustomerModal({ customers = [], onSubmit, onCancel }) {
 export function PortalModal({ title, defaults = {}, onSubmit, onCancel }) {
   const [name, setName] = useState(defaults.name || '')
   const [url, setUrl] = useState(defaults.url || '')
+  const [selectedIds, setSelectedIds] = useState([])
   const [search, setSearch] = useState('')
   const ref = useRef()
   useEffect(() => { ref.current?.focus() }, [])
-  const submit = () => { if (name.trim() && url.trim()) onSubmit({ name: name.trim(), url: url.trim() }) }
+
+  const submit = () => {
+    if (selectedIds.length > 0) {
+      const portals = selectedIds
+        .map((id) => PORTAL_CATALOG.find((p) => p.id === id))
+        .filter(Boolean)
+        .map((p) => ({ name: p.name, url: p.url }))
+      if (portals.length) onSubmit(portals)
+      return
+    }
+    if (name.trim() && url.trim()) onSubmit({ name: name.trim(), url: url.trim() })
+  }
+
+  const toggleTemplate = (id, p) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+    setName(p.name)
+    setUrl(p.url)
+  }
 
   const filteredCatalog = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -115,8 +135,8 @@ export function PortalModal({ title, defaults = {}, onSubmit, onCancel }) {
           {filteredCatalog.map((p) => (
             <button
               key={p.id}
-              className={`templateChip ${(name === p.name && url === p.url) ? 'active' : ''}`}
-              onClick={() => { setName(p.name); setUrl(p.url) }}
+              className={`templateChip ${selectedIds.includes(p.id) ? 'active' : ''}`}
+              onClick={() => toggleTemplate(p.id, p)}
               type="button"
             >
               <PortalIcon icon={p.icon} name={p.name} />

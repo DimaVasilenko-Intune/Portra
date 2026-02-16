@@ -131,12 +131,19 @@ function App() {
       <PortalModal
         title="Add Portal"
         onCancel={closeModal}
-        onSubmit={({ name, url }) => {
+        onSubmit={(payload) => {
           closeModal()
           const next = structuredClone(data)
-          next.customers.find(x => x.id === cid).portals.push({ name, url, username: '' })
+          const customer = next.customers.find(x => x.id === cid)
+          if (!customer) return data
+
+          const list = Array.isArray(payload) ? payload : [payload]
+          list.forEach(({ name, url }) => {
+            customer.portals.push({ name, url, username: '' })
+            notify(`Added "${name}"`)
+          })
+
           persist(next)
-          notify(`Added "${name}"`)
         }}
       />
     )

@@ -22,7 +22,9 @@ export const STANDARD_PORTALS = [
   'intune',
   'admin-center',
   'security-center',
-  'entra'
+  'entra',
+  'exchange-admin',
+  'sharepoint-admin'
 ]
 
 export function getStandardPortals() {
