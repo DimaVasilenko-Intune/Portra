@@ -12,9 +12,12 @@ Portra solves this by launching each customer portal in a **real browser profile
 - Expand/collapse customer sections
 - Portal shortcuts per customer (Azure, M365, etc)
 - Stored username (no password storage)
+- One-click username copy
 - Launch portal in dedicated browser profile per customer
 - Persistent sign-in sessions per customer profile
-- Dark, modern UI
+- Light/Dark mode toggle (saved preference)
+- Import/Export JSON data
+- Modern UI
 
 ## Security model
 - Passwords are **not** stored
@@ -28,14 +31,16 @@ npm install
 npm run dev
 ```
 
-## Build Windows app
+## Build installers
 ```bash
-npm run dist
+npm run dist:win   # Windows NSIS installer (.exe)
+npm run dist:mac   # macOS DMG/ZIP (must run on macOS host)
 ```
 Output: `release/`
 
 ## Notes
 - On Windows, Portra looks for Chrome/Edge in default install paths.
+- On macOS, Portra looks for Chrome/Edge/Chromium in `/Applications`.
 - If no supported browser is found, it opens links with system default browser.
 
 ## Planned next

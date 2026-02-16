@@ -7,8 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build",
-    "dist": "npm run build && electron-builder -w --x64",
-    "start": "electron ."
+    "dist": "npm run build && electron-builder -w -m",
+    "start": "electron .",
+    "dist:win": "npm run build && electron-builder -w --x64",
+    "dist:mac": "npm run build && electron-builder -m"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +25,18 @@
     ],
     "directories": {
       "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
     }
   },
   "dependencies": {

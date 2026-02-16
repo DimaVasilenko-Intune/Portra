@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -36,18 +36,28 @@ function saveData(data) {
 }
 
 function chromeCandidates() {
-  return process.platform === 'win32'
-    ? [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
-      ]
-    : [
-        '/usr/bin/google-chrome',
-        '/usr/bin/chromium-browser',
-        '/usr/bin/microsoft-edge'
-      ];
+  if (process.platform === 'win32') {
+    return [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    ];
+  }
+
+  if (process.platform === 'darwin') {
+    return [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium'
+    ];
+  }
+
+  return [
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/microsoft-edge'
+  ];
 }
 
 function findBrowser() {
@@ -100,6 +110,28 @@ app.whenReady().then(() => {
   ipcMain.handle('data:save', (_e, data) => {
     saveData(data);
     return { ok: true };
+  });
+  ipcMain.handle('data:export', async (_e, data) => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Export Portra data',
+      defaultPath: 'portra-export.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (canceled || !filePath) return { ok: false, canceled: true };
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    return { ok: true, filePath };
+  });
+  ipcMain.handle('data:import', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Import Portra data',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (canceled || !filePaths?.length) return { ok: false, canceled: true };
+    const content = fs.readFileSync(filePaths[0], 'utf-8');
+    const parsed = JSON.parse(content);
+    saveData(parsed);
+    return { ok: true, data: parsed, filePath: filePaths[0] };
   });
   ipcMain.handle('portal:open', (_e, payload) => {
     openWithProfile(payload);
