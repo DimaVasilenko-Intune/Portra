@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
-import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield } from './icons'
+import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield, PortalIcon } from './icons'
 import { InputModal, PortalModal, ConfirmModal, CustomerModal } from './Modal'
-import { getStandardPortals } from './portalCatalog'
+import { getStandardPortals, PORTAL_CATALOG } from './portalCatalog'
 import './styles.css'
 
 function Toast({ message, onDone }) {
@@ -259,11 +259,16 @@ function App() {
             {expanded[c.id] && (
               <div className="portals">
                 {c.portals.length === 0 && <p className="muted">No portals yet.</p>}
-                {c.portals.map((p, i) => (
+                {c.portals.map((p, i) => {
+                  const match = PORTAL_CATALOG.find(t => t.id === p.id || t.name === p.name || p.url.startsWith(t.url))
+                  return (
                   <div key={p.name + i} className="portalRow">
                     <div className="portalInfo">
-                      <div className="pname">{p.name}</div>
-                      <span className="purl">{p.url}</span>
+                      {match && <PortalIcon icon={match.icon} name={match.name} />}
+                      <div>
+                        <div className="pname">{p.name}</div>
+                        <span className="purl">{p.url}</span>
+                      </div>
                     </div>
                     <div className="inputWrap">
                       <input
@@ -281,7 +286,7 @@ function App() {
                       <button className="iconBtn dangerHover" onClick={() => deletePortal(c.id, i)} title="Delete"><IconTrash /></button>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </section>
@@ -291,6 +296,7 @@ function App() {
       <footer className="appFooter">
         <span>Portra{version ? ` v${version}` : ''}</span>
         <span className="footerSecure"><IconShield /> Encrypted locally</span>
+        <span className="footerMadeBy">Made by DimaVasilenko</span>
       </footer>
     </div>
   )

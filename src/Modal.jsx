@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { IconX, IconSearch } from './icons'
+import { IconX, IconSearch, PortalIcon } from './icons'
 import { PORTAL_CATALOG } from './portalCatalog'
 
 export function InputModal({ title, label, defaultValue = '', onSubmit, onCancel }) {
@@ -119,7 +119,8 @@ export function PortalModal({ title, defaults = {}, onSubmit, onCancel }) {
               onClick={() => { setName(p.name); setUrl(p.url) }}
               type="button"
             >
-              {p.name}
+              <PortalIcon icon={p.icon} name={p.name} />
+              <span>{p.name}</span>
             </button>
           ))}
         </div>

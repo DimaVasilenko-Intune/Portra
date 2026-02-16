@@ -145,6 +145,14 @@ button.dangerHover:hover { color: var(--danger); background: var(--dangerSoft); 
   transition: border-color var(--transition);
 }
 .portalRow:hover { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.portalInfo { display: flex; align-items: center; gap: 10px; }
+.portalIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
 .pname { font-size: 14px; font-weight: 600; }
 .purl { font-size: 12px; color: var(--textSoft); word-break: break-all; }
 .inputWrap { display: grid; grid-template-columns: 1fr 32px; gap: 6px; align-items: center; }
@@ -236,6 +244,9 @@ select.modalInput { appearance: none; -webkit-appearance: none; }
   padding: 8px 10px;
   font-size: 12px;
   justify-content: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .templateChip:hover { border-color: var(--accent); background: var(--accentSoft); }
 .templateChip.active { border-color: var(--accent); background: var(--accentSoft); color: var(--text); }
@@ -248,6 +259,7 @@ select.modalInput { appearance: none; -webkit-appearance: none; }
   background: var(--bg); border-top: 1px solid var(--cardBorder);
 }
 .footerSecure { display: flex; align-items: center; gap: 4px; }
+.footerMadeBy { font-weight: 500; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
