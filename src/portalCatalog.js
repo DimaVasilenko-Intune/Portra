@@ -5,7 +5,6 @@ export const PORTAL_CATALOG = [
   { id: 'admin-center', name: 'Admin Center', url: 'https://admin.microsoft.com', icon: './portals/admin-center.svg' },
   { id: 'security-center', name: 'Security Center', url: 'https://security.microsoft.com', icon: 'https://security.microsoft.com/favicon.ico' },
   { id: 'entra', name: 'Entra', url: 'https://entra.microsoft.com', icon: './portals/entra.svg' },
-  { id: 'endpoint-manager', name: 'Endpoint Manager', url: 'https://endpoint.microsoft.com', icon: './portals/endpoint-manager.svg' },
   { id: 'defender', name: 'Defender', url: 'https://security.microsoft.com/defender', icon: 'https://security.microsoft.com/favicon.ico' },
   { id: 'exchange-admin', name: 'Exchange Admin', url: 'https://admin.exchange.microsoft.com', icon: './portals/exchange-admin.svg' },
   { id: 'sharepoint-admin', name: 'SharePoint Admin', url: 'https://admin.microsoft.com/sharepoint', icon: './portals/sharepoint-admin.svg' },
