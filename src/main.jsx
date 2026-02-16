@@ -1,21 +1,14 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
+import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield } from './icons'
+import { InputModal, PortalModal, ConfirmModal } from './Modal'
 import './styles.css'
 
-// ---------------------------------------------------------------------------
-// Toast notification
-// ---------------------------------------------------------------------------
 function Toast({ message, onDone }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2200)
-    return () => clearTimeout(t)
-  }, [onDone])
+  useEffect(() => { const t = setTimeout(onDone, 2000); return () => clearTimeout(t) }, [onDone])
   return <div className="toast">{message}</div>
 }
 
-// ---------------------------------------------------------------------------
-// App
-// ---------------------------------------------------------------------------
 function App() {
   const [data, setData] = useState({ customers: [] })
   const [q, setQ] = useState('')
@@ -23,8 +16,10 @@ function App() {
   const [theme, setTheme] = useState(localStorage.getItem('portra-theme') || 'dark')
   const [toast, setToast] = useState(null)
   const [version, setVersion] = useState('')
+  const [modal, setModal] = useState(null)
 
   const notify = useCallback((msg) => setToast(msg), [])
+  const closeModal = useCallback(() => setModal(null), [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -49,88 +44,135 @@ function App() {
     )
   }, [data, q])
 
-  const stats = useMemo(() => {
-    const customers = data.customers.length
-    const portals = data.customers.reduce((a, c) => a + c.portals.length, 0)
-    return { customers, portals }
-  }, [data])
+  const stats = useMemo(() => ({
+    customers: data.customers.length,
+    portals: data.customers.reduce((a, c) => a + c.portals.length, 0)
+  }), [data])
 
   const persist = useCallback((next) => {
     setData(next)
     window.orbit.saveData(next)
   }, [])
 
-  // --- Customer CRUD ---
+  // --- Customer ---
   const addCustomer = () => {
-    const name = prompt('Customer name')
-    if (!name?.trim()) return
-    const id = crypto.randomUUID()
-    const next = structuredClone(data)
-    next.customers.push({ id, name: name.trim(), portals: [] })
-    persist(next)
-    setExpanded(prev => ({ ...prev, [id]: true }))
-    notify(`Added "${name.trim()}"`)
+    setModal(
+      <InputModal
+        title="New Customer"
+        label="Customer name"
+        onCancel={closeModal}
+        onSubmit={(name) => {
+          closeModal()
+          const id = crypto.randomUUID()
+          setData(prev => {
+            const next = structuredClone(prev)
+            next.customers.push({ id, name, portals: [] })
+            window.orbit.saveData(next)
+            return next
+          })
+          setExpanded(prev => ({ ...prev, [id]: true }))
+          notify(`Added "${name}"`)
+        }}
+      />
+    )
   }
 
   const renameCustomer = (cid) => {
     const c = data.customers.find(x => x.id === cid)
     if (!c) return
-    const name = prompt('New name', c.name)
-    if (!name?.trim() || name.trim() === c.name) return
-    const next = structuredClone(data)
-    next.customers.find(x => x.id === cid).name = name.trim()
-    persist(next)
-    notify(`Renamed to "${name.trim()}"`)
+    setModal(
+      <InputModal
+        title="Rename Customer"
+        label="New name"
+        defaultValue={c.name}
+        onCancel={closeModal}
+        onSubmit={(name) => {
+          closeModal()
+          const next = structuredClone(data)
+          next.customers.find(x => x.id === cid).name = name
+          persist(next)
+          notify(`Renamed to "${name}"`)
+        }}
+      />
+    )
   }
 
   const deleteCustomer = (cid) => {
     const c = data.customers.find(x => x.id === cid)
     if (!c) return
-    if (!confirm(`Delete "${c.name}" and all its portals?`)) return
-    const next = structuredClone(data)
-    next.customers = next.customers.filter(x => x.id !== cid)
-    persist(next)
-    notify(`Deleted "${c.name}"`)
+    setModal(
+      <ConfirmModal
+        title="Delete Customer"
+        message={`Delete "${c.name}" and all its portals? This cannot be undone.`}
+        danger
+        onCancel={closeModal}
+        onConfirm={() => {
+          closeModal()
+          const next = structuredClone(data)
+          next.customers = next.customers.filter(x => x.id !== cid)
+          persist(next)
+          notify(`Deleted "${c.name}"`)
+        }}
+      />
+    )
   }
 
-  // --- Portal CRUD ---
+  // --- Portal ---
   const addPortal = (cid) => {
-    const name = prompt('Portal name (e.g. Azure)')
-    if (!name?.trim()) return
-    const url = prompt('Portal URL (https://...)')
-    if (!url?.trim()) return
-    const next = structuredClone(data)
-    const c = next.customers.find(x => x.id === cid)
-    c.portals.push({ name: name.trim(), url: url.trim(), username: '' })
-    persist(next)
-    notify(`Added portal "${name.trim()}"`)
+    setModal(
+      <PortalModal
+        title="Add Portal"
+        onCancel={closeModal}
+        onSubmit={({ name, url }) => {
+          closeModal()
+          const next = structuredClone(data)
+          next.customers.find(x => x.id === cid).portals.push({ name, url, username: '' })
+          persist(next)
+          notify(`Added "${name}"`)
+        }}
+      />
+    )
   }
 
   const editPortal = (cid, idx) => {
-    const c = data.customers.find(x => x.id === cid)
-    if (!c) return
-    const p = c.portals[idx]
-    const name = prompt('Portal name', p.name)
-    if (!name?.trim()) return
-    const url = prompt('Portal URL', p.url)
-    if (!url?.trim()) return
-    const next = structuredClone(data)
-    const np = next.customers.find(x => x.id === cid).portals[idx]
-    np.name = name.trim()
-    np.url = url.trim()
-    persist(next)
-    notify(`Updated "${name.trim()}"`)
+    const p = data.customers.find(x => x.id === cid)?.portals[idx]
+    if (!p) return
+    setModal(
+      <PortalModal
+        title="Edit Portal"
+        defaults={p}
+        onCancel={closeModal}
+        onSubmit={({ name, url }) => {
+          closeModal()
+          const next = structuredClone(data)
+          const np = next.customers.find(x => x.id === cid).portals[idx]
+          np.name = name
+          np.url = url
+          persist(next)
+          notify(`Updated "${name}"`)
+        }}
+      />
+    )
   }
 
   const deletePortal = (cid, idx) => {
-    const c = data.customers.find(x => x.id === cid)
-    if (!c) return
-    const p = c.portals[idx]
-    if (!confirm(`Delete portal "${p.name}"?`)) return
-    const next = structuredClone(data)
-    next.customers.find(x => x.id === cid).portals.splice(idx, 1)
-    persist(next)
-    notify(`Deleted "${p.name}"`)
+    const p = data.customers.find(x => x.id === cid)?.portals[idx]
+    if (!p) return
+    setModal(
+      <ConfirmModal
+        title="Delete Portal"
+        message={`Delete "${p.name}"? This cannot be undone.`}
+        danger
+        onCancel={closeModal}
+        onConfirm={() => {
+          closeModal()
+          const next = structuredClone(data)
+          next.customers.find(x => x.id === cid).portals.splice(idx, 1)
+          persist(next)
+          notify(`Deleted "${p.name}"`)
+        }}
+      />
+    )
   }
 
   const setUsername = (cid, idx, username) => {
@@ -141,16 +183,12 @@ function App() {
 
   const copyUsername = async (username) => {
     if (!username) return
-    try {
-      await navigator.clipboard.writeText(username)
-      notify('Copied!')
-    } catch { /* no-op */ }
+    try { await navigator.clipboard.writeText(username); notify('Copied to clipboard') } catch {}
   }
 
-  // --- Import / Export ---
   const exportData = async () => {
     const res = await window.orbit.exportData(data)
-    if (res?.ok) notify(`Exported to ${res.filePath}`)
+    if (res?.ok) notify('Data exported')
   }
 
   const importData = async () => {
@@ -160,14 +198,14 @@ function App() {
       const e = {}
       res.data.customers.forEach(c => (e[c.id] = false))
       setExpanded(e)
-      notify(`Imported from ${res.filePath}`)
-      return
+      notify('Data imported')
     }
     if (res?.error) notify(res.error)
   }
 
   return (
     <div className="app">
+      {modal}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
 
       <header className="topbar">
@@ -177,22 +215,23 @@ function App() {
           <span className="badge">{stats.customers} customers · {stats.portals} portals</span>
         </div>
         <div className="actions">
-          <button className="ghost" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            {theme === 'dark' ? '☀️' : '🌙'}
+          <button className="iconBtn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle theme">
+            {theme === 'dark' ? <IconSun /> : <IconMoon />}
           </button>
-          <button className="ghost" onClick={importData}>Import</button>
-          <button className="ghost" onClick={exportData}>Export</button>
-          <button className="primary" onClick={addCustomer}>+ Customer</button>
+          <button className="ghost" onClick={importData}><IconUpload /> Import</button>
+          <button className="ghost" onClick={exportData}><IconDownload /> Export</button>
+          <button className="primary" onClick={addCustomer}><IconPlus /> Customer</button>
         </div>
       </header>
 
       <div className="searchWrap">
+        <IconSearch />
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search customers or portals..." />
       </div>
 
       {filtered.length === 0 && (
         <div className="empty">
-          {q ? 'No results found.' : 'No customers yet — click "+ Customer" to get started.'}
+          {q ? 'No results found.' : 'No customers yet — add one to get started.'}
         </div>
       )}
 
@@ -200,23 +239,23 @@ function App() {
         {filtered.map(c => (
           <section key={c.id} className="card">
             <div className="cardHead" onClick={() => setExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
-              <span className="chevron">{expanded[c.id] ? '▾' : '▸'}</span>
+              <IconChevron open={expanded[c.id]} />
               <h2>{c.name}</h2>
-              <span className="portalCount">{c.portals.length} portals</span>
+              <span className="portalCount">{c.portals.length} portal{c.portals.length !== 1 ? 's' : ''}</span>
               <div className="cardActions" onClick={e => e.stopPropagation()}>
-                <button className="ghost small" onClick={() => addPortal(c.id)}>+ Portal</button>
-                <button className="ghost small" onClick={() => renameCustomer(c.id)}>✏️</button>
-                <button className="ghost small danger" onClick={() => deleteCustomer(c.id)}>🗑</button>
+                <button className="ghost small" onClick={() => addPortal(c.id)}><IconPlus /> Portal</button>
+                <button className="iconBtn" onClick={() => renameCustomer(c.id)} title="Rename"><IconEdit /></button>
+                <button className="iconBtn dangerHover" onClick={() => deleteCustomer(c.id)} title="Delete"><IconTrash /></button>
               </div>
             </div>
             {expanded[c.id] && (
               <div className="portals">
-                {c.portals.length === 0 && <p className="muted">No portals yet — click "+ Portal" to add one.</p>}
+                {c.portals.length === 0 && <p className="muted">No portals yet.</p>}
                 {c.portals.map((p, i) => (
                   <div key={p.name + i} className="portalRow">
                     <div className="portalInfo">
                       <div className="pname">{p.name}</div>
-                      <a href={p.url} target="_blank" rel="noreferrer">{p.url}</a>
+                      <span className="purl">{p.url}</span>
                     </div>
                     <div className="inputWrap">
                       <input
@@ -224,12 +263,14 @@ function App() {
                         onChange={e => setUsername(c.id, i, e.target.value)}
                         placeholder="Username"
                       />
-                      <button className="tiny" onClick={() => copyUsername(p.username)} title="Copy username">📋</button>
+                      <button className="iconBtn" onClick={() => copyUsername(p.username)} title="Copy username"><IconCopy /></button>
                     </div>
                     <div className="portalActions">
-                      <button className="primary" onClick={() => window.orbit.openPortal({ customerId: c.id, url: p.url })}>Open</button>
-                      <button className="ghost tiny" onClick={() => editPortal(c.id, i)} title="Edit portal">✏️</button>
-                      <button className="ghost tiny danger" onClick={() => deletePortal(c.id, i)} title="Delete portal">🗑</button>
+                      <button className="primary compact" onClick={() => window.orbit.openPortal({ customerId: c.id, url: p.url })}>
+                        <IconExternalLink /> Open
+                      </button>
+                      <button className="iconBtn" onClick={() => editPortal(c.id, i)} title="Edit"><IconEdit /></button>
+                      <button className="iconBtn dangerHover" onClick={() => deletePortal(c.id, i)} title="Delete"><IconTrash /></button>
                     </div>
                   </div>
                 ))}
@@ -241,7 +282,7 @@ function App() {
 
       <footer className="appFooter">
         <span>Portra{version ? ` v${version}` : ''}</span>
-        <span>Data encrypted locally</span>
+        <span className="footerSecure"><IconShield /> Encrypted locally</span>
       </footer>
     </div>
   )
