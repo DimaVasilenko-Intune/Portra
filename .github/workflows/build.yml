@@ -17,6 +17,18 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm run dist:win
-      - uses: softprops/action-gh-release@v2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build-mac:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          files: release/*.exe
+          node-version: 22
+      - run: npm ci
+      - run: npm run dist:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
