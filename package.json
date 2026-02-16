@@ -21,22 +21,54 @@
     "files": [
       "dist/**",
       "electron/**",
-      "package.json"
+      "package.json",
+      "build/**"
     ],
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
-        "dmg",
-        "zip"
-      ]
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns"
     },
     "win": {
       "target": [
-        "nsis"
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "asar": true,
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Portra"
+    },
+    "dmg": {
+      "sign": false
     }
   },
   "dependencies": {
@@ -46,11 +78,12 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
     "electron": "^40.4.1",
     "electron-builder": "^26.7.0",
+    "png2icons": "^2.0.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "wait-on": "^9.0.4",
-    "cross-env": "^7.0.3"
+    "wait-on": "^9.0.4"
   }
 }
