@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
 import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield } from './icons'
 import { InputModal, PortalModal, ConfirmModal, CustomerModal } from './Modal'
+import { getStandardPortals } from './portalCatalog'
 import './styles.css'
 
 function Toast({ message, onDone }) {
@@ -65,15 +66,20 @@ function App() {
           const id = crypto.randomUUID()
           setData(prev => {
             const next = structuredClone(prev)
-            const copiedPortals = mode === 'copy'
-              ? (next.customers.find(c => c.id === sourceCustomerId)?.portals || []).map(p => ({ ...p }))
-              : []
-            next.customers.push({ id, name, portals: copiedPortals })
+            let portals = []
+
+            if (mode === 'copy') {
+              portals = (next.customers.find(c => c.id === sourceCustomerId)?.portals || []).map(p => ({ ...p }))
+            } else if (mode === 'standard') {
+              portals = getStandardPortals().map((p) => ({ name: p.name, url: p.url, username: '' }))
+            }
+
+            next.customers.push({ id, name, portals })
             window.orbit.saveData(next)
             return next
           })
           setExpanded(prev => ({ ...prev, [id]: true }))
-          notify(mode === 'copy' ? `Added "${name}" with copied portals` : `Added "${name}"`)
+          notify(mode === 'copy' ? `Added "${name}" with copied portals` : mode === 'standard' ? `Added "${name}" with standard portals` : `Added "${name}"`)
         }}
       />
     )

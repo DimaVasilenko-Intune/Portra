@@ -56,10 +56,36 @@ function sanitizeImportedData(parsed) {
 }
 
 function parseCfgText(text) {
-  // 1) JSON with .cfg extension
+  // 1) JSON with .cfg extension (Portals exports often use this)
   try {
     const parsed = JSON.parse(text);
+
+    // Portra-native format
     if (parsed?.customers) return sanitizeImportedData(parsed);
+
+    // Portals-like format: { "users-data": [ { name, friendlyName, tenant, ... } ] }
+    const users = Array.isArray(parsed?.['users-data']) ? parsed['users-data'] : [];
+    if (users.length) {
+      const defaultPortals = [
+        { name: 'Azure', url: 'https://portal.azure.com' },
+        { name: 'Intune', url: 'https://intune.microsoft.com' },
+        { name: 'Admin Center', url: 'https://admin.microsoft.com' },
+        { name: 'Security Center', url: 'https://security.microsoft.com' },
+        { name: 'Entra', url: 'https://entra.microsoft.com' }
+      ];
+
+      const customers = users.map((u, idx) => {
+        const customerName = u.friendlyName || u.tenant || u.name || `Customer ${idx + 1}`;
+        const username = typeof u.name === 'string' ? u.name : '';
+        return {
+          id: `${Date.now()}-${Math.random()}-${idx}`,
+          name: String(customerName),
+          portals: defaultPortals.map((p) => ({ ...p, username }))
+        };
+      });
+
+      return { customers };
+    }
   } catch {}
 
   // 2) INI-like sections: [Customer Name], lines: PortalName=https://url

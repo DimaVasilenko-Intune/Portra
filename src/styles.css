@@ -203,6 +203,7 @@ button.dangerHover:hover { color: var(--danger); background: var(--dangerSoft); 
 .modalMessage { font-size: 14px; color: var(--textSoft); margin-bottom: 20px; line-height: 1.6; }
 .modalActions { display: flex; gap: 8px; justify-content: flex-end; }
 .modeGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.modeGrid3 { grid-template-columns: 1fr; }
 .modeCard {
   display: flex; gap: 10px; align-items: flex-start; cursor: pointer;
   border: 1px solid var(--inputBorder); border-radius: 10px; padding: 10px;
@@ -214,6 +215,30 @@ button.dangerHover:hover { color: var(--danger); background: var(--dangerSoft); 
 .modeCard span { font-size: 11px; color: var(--textSoft); }
 .modeCard.active { border-color: var(--accent); background: var(--accentSoft); }
 select.modalInput { appearance: none; -webkit-appearance: none; }
+.modalWide { width: 760px; max-width: 94vw; }
+.catalogSearch { position: relative; margin-bottom: 10px; }
+.catalogSearch svg { position: absolute; left: 12px; top: 11px; color: var(--textSoft); }
+.catalogSearch .modalInput { padding-left: 36px; margin-bottom: 0; }
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+  gap: 8px;
+  max-height: 180px;
+  overflow: auto;
+  padding: 2px;
+  margin-bottom: 14px;
+}
+.templateChip {
+  background: var(--rowBg);
+  border: 1px solid var(--rowBorder);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  justify-content: flex-start;
+}
+.templateChip:hover { border-color: var(--accent); background: var(--accentSoft); }
+.templateChip.active { border-color: var(--accent); background: var(--accentSoft); color: var(--text); }
 
 /* ── Footer ── */
 .appFooter {
