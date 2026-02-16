@@ -1,11 +1,11 @@
-# OrbitDesk
+# Portra
 
 Modern customer portal launcher for multi-tenant work.
 
 ## Why this exists
 Portals is great for account switching, but your workflow was blocked by embedded browser limits (copy/paste friction, capped window behavior).
 
-OrbitDesk solves this by launching each customer portal in a **real browser profile** (Chrome/Edge), one profile per customer.
+Portra solves this by launching each customer portal in a **real browser profile** (Chrome/Edge), one profile per customer.
 
 ## Key MVP features
 - Customer list with search
@@ -35,7 +35,7 @@ npm run dist
 Output: `release/`
 
 ## Notes
-- On Windows, OrbitDesk looks for Chrome/Edge in default install paths.
+- On Windows, Portra looks for Chrome/Edge in default install paths.
 - If no supported browser is found, it opens links with system default browser.
 
 ## Planned next

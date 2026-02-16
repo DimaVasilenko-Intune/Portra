@@ -1,7 +1,7 @@
 {
-  "name": "orbitdesk",
+  "name": "portra",
   "version": "0.1.0",
-  "description": "OrbitDesk - multi-customer portal launcher",
+  "description": "Portra - multi-customer portal launcher",
   "main": "electron/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -14,8 +14,8 @@
   "author": "",
   "license": "ISC",
   "build": {
-    "appId": "com.dmivas.orbitdesk",
-    "productName": "OrbitDesk",
+    "appId": "com.dmivas.portra",
+    "productName": "Portra",
     "files": [
       "dist/**",
       "electron/**",

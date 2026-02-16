@@ -79,7 +79,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 860,
-    title: 'OrbitDesk',
+    title: 'Portra',
     backgroundColor: '#0b1020',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

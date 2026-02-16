@@ -56,8 +56,8 @@ function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <img src="/logo.svg" alt="OrbitDesk" />
-          <h1>OrbitDesk</h1>
+          <img src="/logo.svg" alt="Portra" />
+          <h1>Portra</h1>
         </div>
         <button onClick={addCustomer}>+ Customer</button>
       </header>
