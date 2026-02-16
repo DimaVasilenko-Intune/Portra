@@ -56,10 +56,7 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
-      "publisherName": [
-        "Portra"
-      ]
+      "icon": "build/icon.ico"
     },
     "asar": true,
     "nsis": {
