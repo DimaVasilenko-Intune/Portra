@@ -1,48 +1,57 @@
 # Portra
 
-Portra is a desktop app for managing and launching customer portals with isolated browser profiles.
+A desktop app for managing and launching customer portals with isolated browser profiles.
 
-## What Portra does
-- Organize customers and their portal links
-- Launch each portal with a dedicated browser profile per customer
-- Keep customer sessions separated and persistent
-- Store usernames (never passwords)
-- Search customers and portals instantly
-- Light/Dark mode
-- Import/Export data as JSON
+## Download
 
-## Security model
-- Passwords are **not** stored
-- Usernames only
-- Customer data is stored locally in app userData (`customers.json`)
-- Browser session persistence is handled by each customer profile directory
+- **Windows:** [Portra Setup (.exe)](https://github.com/DimaVasilenko-Intune/Portra/releases/latest)
+- **macOS:** [Portra (.dmg)](https://github.com/DimaVasilenko-Intune/Portra/releases/latest)
 
-## Run locally (Windows/macOS)
+## Features
+
+- **Customer management** — add, rename, delete customers
+- **Portal shortcuts** — add, edit, delete portal links per customer
+- **Isolated browser profiles** — each customer gets a dedicated Chrome/Edge profile with persistent sessions
+- **Username storage** — encrypted at rest using OS keychain (Windows DPAPI / macOS Keychain)
+- **Copy username** — one click to clipboard
+- **Search** — filter across all customers and portals instantly
+- **Light / Dark mode** — toggle and persist preference
+- **Import / Export** — backup and restore data as JSON
+- **Cross-platform** — Windows and macOS
+
+## Security
+
+- Customer data (including usernames) is **encrypted at rest** using Electron `safeStorage` backed by your OS keychain
+- Passwords are **never stored**
+- Browser profiles are isolated per customer in app userData
+- No telemetry, no network calls, no cloud — 100% local
+- Context isolation and sandbox enabled
+
+## Run from source
+
 ```bash
+git clone https://github.com/DimaVasilenko-Intune/Portra.git
+cd Portra
 npm install
 npm run dev
 ```
 
-Alternative (runs built app directly):
-```bash
-npm start
-```
-
 ## Build installers
+
 ```bash
-npm run dist:win   # Windows NSIS installer (.exe)
-npm run dist:mac   # macOS DMG/ZIP (must run on macOS host)
+npm run dist:win   # Windows .exe (NSIS)
+npm run dist:mac   # macOS .dmg + .zip
 ```
 
-Output: `release/`
+## Platform support
 
-## Platform behavior
-- Windows: detects Chrome/Edge in standard install paths
-- macOS: detects Chrome/Edge/Chromium in `/Applications`
-- Fallback: opens URL with system default browser if supported browsers are not found
+| Platform | Browser detection |
+|----------|-------------------|
+| Windows  | Chrome, Edge (default install paths) |
+| macOS    | Chrome, Edge, Chromium (`/Applications`) |
 
-## Roadmap
-- Edit/Delete customer and portal actions in UI
-- Optional encrypted local data at rest
-- Optional cloud backup/sync
-- Global quick launcher
+Falls back to system default browser if none found.
+
+## License
+
+MIT

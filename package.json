@@ -4,7 +4,6 @@
   "description": "Portra - multi-customer portal launcher",
   "main": "electron/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "build": "vite build",
     "dist": "npm run build && electron-builder -w -m",
@@ -13,8 +12,8 @@
     "dist:mac": "npm run build && electron-builder -m"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Dima Vasilenko",
+  "license": "MIT",
   "build": {
     "appId": "com.dmivas.portra",
     "productName": "Portra",
@@ -81,9 +80,11 @@
     "cross-env": "^7.0.3",
     "electron": "^40.4.1",
     "electron-builder": "^26.7.0",
-    "png2icons": "^2.0.1",
-    "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "wait-on": "^9.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DimaVasilenko-Intune/Portra"
   }
 }
