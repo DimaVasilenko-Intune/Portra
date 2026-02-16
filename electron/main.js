@@ -4,6 +4,7 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 
 const isDev = !app.isPackaged;
+const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const DATA_FILE = path.join(app.getPath('userData'), 'customers.json');
 
 function defaultData() {
@@ -98,11 +99,21 @@ function createWindow() {
     }
   });
 
-  if (isDev) {
-    win.loadURL('http://localhost:5173');
-  } else {
-    win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  const distIndex = path.join(__dirname, '..', 'dist', 'index.html');
+
+  if (isDev && devServerUrl) {
+    win.loadURL(devServerUrl);
+    return;
   }
+
+  if (fs.existsSync(distIndex)) {
+    win.loadFile(distIndex);
+    return;
+  }
+
+  win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(
+    '<h2>Portra build mangler</h2><p>Kjør: npm run build</p>'
+  ));
 }
 
 app.whenReady().then(() => {
@@ -128,10 +139,18 @@ app.whenReady().then(() => {
       filters: [{ name: 'JSON', extensions: ['json'] }]
     });
     if (canceled || !filePaths?.length) return { ok: false, canceled: true };
-    const content = fs.readFileSync(filePaths[0], 'utf-8');
-    const parsed = JSON.parse(content);
-    saveData(parsed);
-    return { ok: true, data: parsed, filePath: filePaths[0] };
+
+    try {
+      const content = fs.readFileSync(filePaths[0], 'utf-8');
+      const parsed = JSON.parse(content);
+      if (!parsed || !Array.isArray(parsed.customers)) {
+        return { ok: false, error: 'Invalid format: expected { customers: [] }' };
+      }
+      saveData(parsed);
+      return { ok: true, data: parsed, filePath: filePaths[0] };
+    } catch (err) {
+      return { ok: false, error: `Import failed: ${err.message}` };
+    }
   });
   ipcMain.handle('portal:open', (_e, payload) => {
     openWithProfile(payload);

@@ -5,10 +5,10 @@
   "main": "electron/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "build": "vite build",
     "dist": "npm run build && electron-builder -w -m",
-    "start": "electron .",
+    "start": "npm run build && electron .",
     "dist:win": "npm run build && electron-builder -w --x64",
     "dist:mac": "npm run build && electron-builder -m"
   },
@@ -50,6 +50,7 @@
     "electron-builder": "^26.7.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "wait-on": "^9.0.4"
+    "wait-on": "^9.0.4",
+    "cross-env": "^7.0.3"
   }
 }

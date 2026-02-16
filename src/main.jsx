@@ -81,7 +81,9 @@ function App() {
       res.data.customers.forEach(c => (e[c.id] = false))
       setExpanded(e)
       alert(`Imported: ${res.filePath}`)
+      return
     }
+    if (res?.error) alert(res.error)
   }
 
   const copyUsername = async (username) => {

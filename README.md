@@ -25,10 +25,15 @@ Portra solves this by launching each customer portal in a **real browser profile
 - Session persistence is handled by browser profile storage
 - Data is stored locally in app userData (`customers.json`)
 
-## Run locally
+## Run locally (Windows/macOS)
 ```bash
 npm install
 npm run dev
+```
+
+Alternative (no dev server, runs built app directly):
+```bash
+npm start
 ```
 
 ## Build installers
