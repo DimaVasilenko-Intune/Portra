@@ -1,31 +1,33 @@
 # Portra
 
-A desktop app for managing and launching customer portals with isolated browser profiles.
+A secure desktop app for managing and launching customer portals with isolated browser profiles.
 
 ## Download
 
-- **Windows:** [Portra Setup (.exe)](https://github.com/DimaVasilenko-Intune/Portra/releases/latest)
-- **macOS:** [Portra (.dmg)](https://github.com/DimaVasilenko-Intune/Portra/releases/latest)
+- **Windows (.exe):** https://github.com/DimaVasilenko-Intune/Portra/releases/latest
+- **macOS (.dmg):** https://github.com/DimaVasilenko-Intune/Portra/releases/latest
 
-## Features
+## Core features
 
-- **Customer management** — add, rename, delete customers
-- **Portal shortcuts** — add, edit, delete portal links per customer
-- **Isolated browser profiles** — each customer gets a dedicated Chrome/Edge profile with persistent sessions
-- **Username storage** — encrypted at rest using OS keychain (Windows DPAPI / macOS Keychain)
-- **Copy username** — one click to clipboard
-- **Search** — filter across all customers and portals instantly
-- **Light / Dark mode** — toggle and persist preference
-- **Import / Export** — backup and restore data as JSON
-- **Cross-platform** — Windows and macOS
+- Customer and portal management (add/edit/delete)
+- New customer options:
+  - **Fresh** (empty customer)
+  - **Copy** (clone portals from another customer)
+- Isolated browser profile per customer
+- Username storage (encrypted at rest)
+- Search, light/dark mode, import/export
+- Import supports both **.json** and **.cfg**
 
 ## Security
 
-- Customer data (including usernames) is **encrypted at rest** using Electron `safeStorage` backed by your OS keychain
-- Passwords are **never stored**
-- Browser profiles are isolated per customer in app userData
-- No telemetry, no network calls, no cloud — 100% local
-- Context isolation and sandbox enabled
+- Usernames are encrypted at rest with Electron `safeStorage` (OS keychain)
+- Passwords are never stored
+- Context isolation + sandbox enabled
+- No telemetry/cloud dependency
+
+## Automatic updates
+
+Portra checks GitHub Releases for updates in production builds and prompts users to restart when update is downloaded.
 
 ## Run from source
 
@@ -39,19 +41,6 @@ npm run dev
 ## Build installers
 
 ```bash
-npm run dist:win   # Windows .exe (NSIS)
-npm run dist:mac   # macOS .dmg + .zip
+npm run dist:win
+npm run dist:mac
 ```
-
-## Platform support
-
-| Platform | Browser detection |
-|----------|-------------------|
-| Windows  | Chrome, Edge (default install paths) |
-| macOS    | Chrome, Edge, Chromium (`/Applications`) |
-
-Falls back to system default browser if none found.
-
-## License
-
-MIT

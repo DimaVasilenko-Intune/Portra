@@ -1,7 +1,7 @@
 {
   "name": "portra",
-  "version": "0.1.0",
-  "description": "Portra - multi-customer portal launcher",
+  "version": "0.3.1",
+  "description": "Portra - secure multi-customer portal workspace",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
@@ -12,7 +12,7 @@
     "dist:mac": "npm run build && electron-builder -m"
   },
   "keywords": [],
-  "author": "Dima Vasilenko",
+  "author": "Portra",
   "license": "MIT",
   "build": {
     "appId": "com.dmivas.portra",
@@ -56,7 +56,10 @@
           ]
         }
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "publisherName": [
+        "Portra"
+      ]
     },
     "asar": true,
     "nsis": {
@@ -68,11 +71,19 @@
     },
     "dmg": {
       "sign": false
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "DimaVasilenko-Intune",
+        "repo": "Portra"
+      }
+    ]
   },
   "dependencies": {
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.4",

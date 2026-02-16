@@ -202,6 +202,18 @@ button.dangerHover:hover { color: var(--danger); background: var(--dangerSoft); 
 .modalInput:focus { outline: none; border-color: var(--inputFocus); }
 .modalMessage { font-size: 14px; color: var(--textSoft); margin-bottom: 20px; line-height: 1.6; }
 .modalActions { display: flex; gap: 8px; justify-content: flex-end; }
+.modeGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.modeCard {
+  display: flex; gap: 10px; align-items: flex-start; cursor: pointer;
+  border: 1px solid var(--inputBorder); border-radius: 10px; padding: 10px;
+  background: var(--inputBg); transition: all var(--transition);
+}
+.modeCard input { margin-top: 2px; }
+.modeCard div { display: flex; flex-direction: column; gap: 2px; }
+.modeCard strong { font-size: 13px; }
+.modeCard span { font-size: 11px; color: var(--textSoft); }
+.modeCard.active { border-color: var(--accent); background: var(--accentSoft); }
+select.modalInput { appearance: none; -webkit-appearance: none; }
 
 /* ── Footer ── */
 .appFooter {

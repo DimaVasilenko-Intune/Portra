@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
 import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield } from './icons'
-import { InputModal, PortalModal, ConfirmModal } from './Modal'
+import { InputModal, PortalModal, ConfirmModal, CustomerModal } from './Modal'
 import './styles.css'
 
 function Toast({ message, onDone }) {
@@ -57,21 +57,23 @@ function App() {
   // --- Customer ---
   const addCustomer = () => {
     setModal(
-      <InputModal
-        title="New Customer"
-        label="Customer name"
+      <CustomerModal
+        customers={data.customers}
         onCancel={closeModal}
-        onSubmit={(name) => {
+        onSubmit={({ name, mode, sourceCustomerId }) => {
           closeModal()
           const id = crypto.randomUUID()
           setData(prev => {
             const next = structuredClone(prev)
-            next.customers.push({ id, name, portals: [] })
+            const copiedPortals = mode === 'copy'
+              ? (next.customers.find(c => c.id === sourceCustomerId)?.portals || []).map(p => ({ ...p }))
+              : []
+            next.customers.push({ id, name, portals: copiedPortals })
             window.orbit.saveData(next)
             return next
           })
           setExpanded(prev => ({ ...prev, [id]: true }))
-          notify(`Added "${name}"`)
+          notify(mode === 'copy' ? `Added "${name}" with copied portals` : `Added "${name}"`)
         }}
       />
     )
