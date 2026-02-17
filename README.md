@@ -20,10 +20,12 @@ A secure desktop app for managing and launching customer portals with isolated b
 
 ## Security
 
+- Data is stored **locally only** under the current OS user profile
 - Usernames are encrypted at rest with Electron `safeStorage` (OS keychain)
-- Passwords are never stored
-- Context isolation + sandbox enabled
-- No telemetry/cloud dependency
+- Passwords are never stored or handled by the app
+- Each workspace uses a dedicated browser profile folder for isolation
+- Context isolation + sandbox enabled in the renderer process
+- No telemetry, no cloud backend, no sync
 
 ## Automatic updates
 

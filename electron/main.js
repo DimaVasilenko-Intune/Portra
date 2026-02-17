@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
+const { URL } = require('url');
 
 const isDev = !app.isPackaged;
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -179,14 +180,31 @@ function findBrowser() {
   return chromeCandidates().find((p) => fs.existsSync(p));
 }
 
-function openWithProfile({ customerId, url }) {
+function withLoginHint(url, username) {
+  if (!username) return url;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+    if (
+      host.endsWith('microsoft.com') ||
+      host.endsWith('azure.com')
+    ) {
+      u.searchParams.set('login_hint', username);
+      return u.toString();
+    }
+  } catch {}
+  return url;
+}
+
+function openWithProfile({ customerId, url, username }) {
   const browserPath = findBrowser();
-  if (!browserPath) return shell.openExternal(url);
+  const finalUrl = withLoginHint(url, username);
+  if (!browserPath) return shell.openExternal(finalUrl);
 
   const profileRoot = path.join(app.getPath('userData'), 'profiles', customerId);
   fs.mkdirSync(profileRoot, { recursive: true });
 
-  const child = spawn(browserPath, [`--user-data-dir=${profileRoot}`, '--new-window', url], {
+  const child = spawn(browserPath, [`--user-data-dir=${profileRoot}`, '--new-window', finalUrl], {
     detached: true,
     stdio: 'ignore'
   });

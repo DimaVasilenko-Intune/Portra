@@ -286,7 +286,7 @@ function App() {
                       <button className="iconBtn" onClick={() => copyUsername(p.username)} title="Copy username"><IconCopy /></button>
                     </div>
                     <div className="portalActions">
-                      <button className="primary compact" onClick={() => window.orbit.openPortal({ customerId: c.id, url: p.url })}>
+                      <button className="primary compact" onClick={() => window.orbit.openPortal({ customerId: c.id, url: p.url, username: p.username })}>
                         <IconExternalLink /> Open
                       </button>
                       <button className="iconBtn" onClick={() => editPortal(c.id, i)} title="Edit"><IconEdit /></button>
