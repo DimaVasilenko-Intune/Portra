@@ -13,19 +13,21 @@ A secure desktop app for managing and launching customer portals with isolated b
 - New customer options:
   - **Fresh** (empty customer)
   - **Copy** (clone portals from another customer)
-- Isolated browser profile per customer
-- Username storage (encrypted at rest)
+  - **Standard** (pre-configured with Azure, Intune, Admin Center, Security Center, Entra, Exchange Admin, SharePoint Admin)
+- **Built-in isolated browser** — each customer workspace opens portals in its own browser session with separate cookies and auth state (no Windows SSO leaking between tenants)
+- Multi-select when adding portals (pick several at once)
+- Username storage per portal (encrypted at rest)
 - Search, light/dark mode, import/export
-- Import supports both **.json** and **.cfg**
+- Import supports both **.json** and **.cfg** (including Portals app format)
 
 ## Security
 
-- Data is stored **locally only** under the current OS user profile
+- **100% local** — all data stays on your machine under your OS user profile
 - Usernames are encrypted at rest with Electron `safeStorage` (OS keychain)
 - Passwords are never stored or handled by the app
-- Each workspace uses a dedicated browser profile folder for isolation
+- Each customer workspace uses a dedicated Electron session with isolated cookies, localStorage, and auth — no cross-tenant leakage
 - Context isolation + sandbox enabled in the renderer process
-- No telemetry, no cloud backend, no sync
+- No telemetry, no cloud backend, no sync, no accounts
 
 ## Automatic updates
 

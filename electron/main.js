@@ -1,9 +1,7 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, safeStorage, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
-const { URL } = require('url');
 
 const isDev = !app.isPackaged;
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -57,14 +55,10 @@ function sanitizeImportedData(parsed) {
 }
 
 function parseCfgText(text) {
-  // 1) JSON with .cfg extension (Portals exports often use this)
   try {
     const parsed = JSON.parse(text);
-
-    // Portra-native format
     if (parsed?.customers) return sanitizeImportedData(parsed);
 
-    // Portals-like format: { "users-data": [ { name, friendlyName, tenant, ... } ] }
     const users = Array.isArray(parsed?.['users-data']) ? parsed['users-data'] : [];
     if (users.length) {
       const defaultPortals = [
@@ -89,7 +83,6 @@ function parseCfgText(text) {
     }
   } catch {}
 
-  // 2) INI-like sections: [Customer Name], lines: PortalName=https://url
   const lines = text.split(/\r?\n/);
   const customers = [];
   let current = null;
@@ -98,9 +91,9 @@ function parseCfgText(text) {
     const line = raw.trim();
     if (!line || line.startsWith('#') || line.startsWith(';')) continue;
 
-    const section = line.match(/^\[(.+?)\]$/);
-    if (section) {
-      current = { id: `${Date.now()}-${Math.random()}`, name: section[1], portals: [] };
+    const sectionMatch = line.match(/^\[(.+?)\]$/);
+    if (sectionMatch) {
+      current = { id: `${Date.now()}-${Math.random()}`, name: sectionMatch[1], portals: [] };
       customers.push(current);
       continue;
     }
@@ -111,7 +104,6 @@ function parseCfgText(text) {
       continue;
     }
 
-    // 3) CSV-ish fallback: customer,portal,url,username
     const parts = line.split(',').map((p) => p.trim());
     if (parts.length >= 3) {
       const [customerName, portalName, url, username = ''] = parts;
@@ -157,60 +149,48 @@ function saveData(data) {
   fs.writeFileSync(DATA_FILE, encrypt(JSON.stringify(data, null, 2)));
 }
 
-function chromeCandidates() {
-  if (process.platform === 'win32') {
-    return [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
-    ];
-  }
-  if (process.platform === 'darwin') {
-    return [
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-      '/Applications/Chromium.app/Contents/MacOS/Chromium'
-    ];
-  }
-  return ['/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/microsoft-edge'];
-}
+/* ── Internal Portra browser ──────────────────────────────────────── */
 
-function findBrowser() {
-  return chromeCandidates().find((p) => fs.existsSync(p));
-}
+// Each customer gets an isolated Electron session (persist:<id>).
+// This means separate cookies, localStorage, and auth state per workspace —
+// no Windows SSO or system browser profile leaking in.
 
-function withLoginHint(url, username) {
-  if (!username) return url;
-  try {
-    const u = new URL(url);
-    const host = u.hostname.toLowerCase();
-    if (
-      host.endsWith('microsoft.com') ||
-      host.endsWith('azure.com')
-    ) {
-      u.searchParams.set('login_hint', username);
-      return u.toString();
+function openPortalInternal({ customerId, url, customerName, portalName }) {
+  const partition = `persist:workspace-${customerId}`;
+  const ses = session.fromPartition(partition);
+
+  const title = [customerName, portalName].filter(Boolean).join(' — ') || 'Portra Browser';
+
+  const win = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    title,
+    autoHideMenuBar: true,
+    webPreferences: {
+      session: ses,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true
     }
-  } catch {}
-  return url;
-}
-
-function openWithProfile({ customerId, url, username }) {
-  const browserPath = findBrowser();
-  const finalUrl = withLoginHint(url, username);
-  if (!browserPath) return shell.openExternal(finalUrl);
-
-  const profileRoot = path.join(app.getPath('userData'), 'profiles', customerId);
-  fs.mkdirSync(profileRoot, { recursive: true });
-
-  const child = spawn(browserPath, [`--user-data-dir=${profileRoot}`, '--new-window', finalUrl], {
-    detached: true,
-    stdio: 'ignore'
   });
-  child.unref();
+
+  // Allow navigation within the same window (portal redirects, login flows, etc.)
+  win.webContents.on('will-navigate', (_e, navUrl) => {
+    // Allow all navigation — portals redirect through login.microsoftonline.com etc.
+  });
+
+  // Open truly external links (target=_blank) in the same isolated session
+  win.webContents.setWindowOpenHandler(({ url: popupUrl }) => {
+    win.loadURL(popupUrl);
+    return { action: 'deny' };
+  });
+
+  win.loadURL(url);
   return true;
 }
+
+/* ── Auto-updater ─────────────────────────────────────────────────── */
 
 function setupAutoUpdates() {
   if (isDev) return;
@@ -230,12 +210,12 @@ function setupAutoUpdates() {
     if (res.response === 0) autoUpdater.quitAndInstall();
   });
 
-  autoUpdater.on('error', () => {
-    // Keep silent in production; updater should never break core app.
-  });
+  autoUpdater.on('error', () => {});
 
   autoUpdater.checkForUpdates().catch(() => {});
 }
+
+/* ── Main window ──────────────────────────────────────────────────── */
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -265,6 +245,8 @@ function createWindow() {
 
   return win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent('<h2 style="font-family:sans-serif;padding:40px">Portra build missing — run: npm run build</h2>'));
 }
+
+/* ── App ready ────────────────────────────────────────────────────── */
 
 app.whenReady().then(() => {
   migrateIfNeeded();
@@ -321,7 +303,7 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('portal:open', (_e, payload) => {
-    openWithProfile(payload);
+    openPortalInternal(payload);
     return { ok: true };
   });
 
