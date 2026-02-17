@@ -3,6 +3,10 @@ const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
+// Enable WebAuthn / FIDO2 / security keys on all platforms
+app.commandLine.appendSwitch('enable-web-authentication');
+app.commandLine.appendSwitch('enable-features', 'WebAuthentication,WebAuthenticationConditionalUI');
+
 const isDev = !app.isPackaged;
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const DATA_FILE = path.join(app.getPath('userData'), 'customers.enc');
@@ -160,15 +164,15 @@ function openPortalInternal({ customerId, url, customerName, portalName }) {
   const partition = `persist:workspace-${customerId}`;
   const ses = session.fromPartition(partition);
 
-  // Allow WebAuthn / passkey / security key (YubiKey etc.)
-  ses.setPermissionRequestHandler((_wc, permission, callback) => {
-    const allowed = ['hid', 'usb', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'notifications'];
-    callback(allowed.includes(permission));
+  // Allow all permissions portal pages may need (WebAuthn, HID for YubiKey, clipboard, etc.)
+  // We don't restrict here because this is the user's own portal browser session.
+  ses.setPermissionRequestHandler((_wc, _permission, callback) => {
+    callback(true);
   });
-  ses.setPermissionCheckHandler((_wc, permission) => {
-    const allowed = ['hid', 'usb', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'notifications'];
-    return allowed.includes(permission);
-  });
+  ses.setPermissionCheckHandler(() => true);
+
+  // Handle device selection for WebAuthn / HID / USB (security keys)
+  ses.setDevicePermissionHandler(() => true);
 
   const title = [customerName, portalName].filter(Boolean).join(' — ') || 'Portra Browser';
 
@@ -181,7 +185,7 @@ function openPortalInternal({ customerId, url, customerName, portalName }) {
       session: ses,
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,  // sandbox off for portal windows — needed for WebAuthn/FIDO2/HID
       webSecurity: true
     }
   });
