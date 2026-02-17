@@ -164,8 +164,12 @@ function openPortalInternal({ customerId, url, customerName, portalName }) {
   const partition = `persist:workspace-${customerId}`;
   const ses = session.fromPartition(partition);
 
+  // Use a real Chrome user agent so Microsoft login pages offer WebAuthn/passkey/security key options.
+  // Electron's default UA contains "Electron" which causes sites to disable advanced auth methods.
+  const chromeUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  ses.setUserAgent(chromeUA);
+
   // Allow all permissions portal pages may need (WebAuthn, HID for YubiKey, clipboard, etc.)
-  // We don't restrict here because this is the user's own portal browser session.
   ses.setPermissionRequestHandler((_wc, _permission, callback) => {
     callback(true);
   });
