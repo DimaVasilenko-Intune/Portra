@@ -137,8 +137,28 @@ button.dangerHover:hover { color: var(--danger); background: var(--dangerSoft); 
 
 /* ── Portals ── */
 .portals { padding: 0 14px 14px; }
+
+.customerUsername {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--rowBg); border: 1px solid var(--rowBorder);
+  border-radius: var(--radius); padding: 10px 14px; margin-top: 6px;
+  margin-bottom: 4px;
+}
+.customerUsername label {
+  font-size: 13px; font-weight: 600; color: var(--textSoft); white-space: nowrap;
+}
+.customerUsername .inputWrap { flex: 1; max-width: 320px; }
+.customerUsername input {
+  width: 100%; padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--inputBorder); background: var(--inputBg);
+  color: var(--text); font-size: 13px;
+  transition: border-color var(--transition);
+}
+.customerUsername input:focus { outline: none; border-color: var(--inputFocus); }
+.customerUsername input::placeholder { color: var(--textSoft); }
+
 .portalRow {
-  display: grid; grid-template-columns: 1fr 220px auto;
+  display: grid; grid-template-columns: 1fr auto;
   gap: 12px; align-items: center;
   background: var(--rowBg); border: 1px solid var(--rowBorder);
   border-radius: var(--radius); padding: 10px 14px; margin-top: 6px;

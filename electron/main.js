@@ -24,9 +24,10 @@ function defaultData() {
       {
         id: 'sample-1',
         name: 'Sample Customer',
+        username: '',
         portals: [
-          { name: 'Azure', url: 'https://portal.azure.com', username: '' },
-          { name: 'M365 Admin', url: 'https://admin.microsoft.com', username: '' }
+          { name: 'Azure', url: 'https://portal.azure.com' },
+          { name: 'M365 Admin', url: 'https://admin.microsoft.com' }
         ]
       }
     ]
@@ -158,6 +159,16 @@ function saveData(data) {
 function openPortalInternal({ customerId, url, customerName, portalName }) {
   const partition = `persist:workspace-${customerId}`;
   const ses = session.fromPartition(partition);
+
+  // Allow WebAuthn / passkey / security key (YubiKey etc.)
+  ses.setPermissionRequestHandler((_wc, permission, callback) => {
+    const allowed = ['hid', 'usb', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'notifications'];
+    callback(allowed.includes(permission));
+  });
+  ses.setPermissionCheckHandler((_wc, permission) => {
+    const allowed = ['hid', 'usb', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'notifications'];
+    return allowed.includes(permission);
+  });
 
   const title = [customerName, portalName].filter(Boolean).join(' — ') || 'Portra Browser';
 

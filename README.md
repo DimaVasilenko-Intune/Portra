@@ -30,7 +30,8 @@ A secure desktop app for managing and launching customer portals with isolated b
   - **Copy** (clone portals from another customer)
 - **Built-in isolated browser** — each customer workspace opens portals in its own browser session with separate cookies and auth state (no Windows SSO leaking between tenants)
 - Multi-select when adding portals (pick several at once)
-- Username storage per portal (encrypted at rest)
+- One username per customer workspace (encrypted at rest)
+- Passkey / security key support (YubiKey, Windows Hello, etc.)
 - Search, light/dark mode, import/export
 - Import supports both **.json** and **.cfg** (including Portals app format)
 - Automatic updates via GitHub Releases

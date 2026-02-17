@@ -71,10 +71,10 @@ function App() {
             if (mode === 'copy') {
               portals = (next.customers.find(c => c.id === sourceCustomerId)?.portals || []).map(p => ({ ...p }))
             } else if (mode === 'standard') {
-              portals = getStandardPortals().map((p) => ({ name: p.name, url: p.url, username: '' }))
+              portals = getStandardPortals().map((p) => ({ name: p.name, url: p.url }))
             }
 
-            next.customers.push({ id, name, portals })
+            next.customers.push({ id, name, username: '', portals })
             window.orbit.saveData(next)
             return next
           })
@@ -139,7 +139,7 @@ function App() {
 
           const list = Array.isArray(payload) ? payload : [payload]
           list.forEach(({ name, url }) => {
-            customer.portals.push({ name, url, username: '' })
+            customer.portals.push({ name, url })
             notify(`Added "${name}"`)
           })
 
@@ -190,9 +190,9 @@ function App() {
     )
   }
 
-  const setUsername = (cid, idx, username) => {
+  const setCustomerUsername = (cid, username) => {
     const next = structuredClone(data)
-    next.customers.find(x => x.id === cid).portals[idx].username = username
+    next.customers.find(x => x.id === cid).username = username
     persist(next)
   }
 
@@ -265,6 +265,18 @@ function App() {
             </div>
             {expanded[c.id] && (
               <div className="portals">
+                <div className="customerUsername">
+                  <label>Username for {c.name}</label>
+                  <div className="inputWrap">
+                    <input
+                      value={c.username || ''}
+                      onChange={e => setCustomerUsername(c.id, e.target.value)}
+                      placeholder="user@domain.com"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <button className="iconBtn" onClick={() => copyUsername(c.username)} title="Copy username"><IconCopy /></button>
+                  </div>
+                </div>
                 {c.portals.length === 0 && <p className="muted">No portals yet.</p>}
                 {c.portals.map((p, i) => {
                   const match = PORTAL_CATALOG.find(t => t.id === p.id || t.name === p.name || p.url.startsWith(t.url))
@@ -276,14 +288,6 @@ function App() {
                         <div className="pname">{p.name}</div>
                         <span className="purl">{p.url}</span>
                       </div>
-                    </div>
-                    <div className="inputWrap">
-                      <input
-                        value={p.username || ''}
-                        onChange={e => setUsername(c.id, i, e.target.value)}
-                        placeholder="Username"
-                      />
-                      <button className="iconBtn" onClick={() => copyUsername(p.username)} title="Copy username"><IconCopy /></button>
                     </div>
                     <div className="portalActions">
                       <button className="primary compact" onClick={() => window.orbit.openPortal({ customerId: c.id, url: p.url, customerName: c.name, portalName: p.name })}>
