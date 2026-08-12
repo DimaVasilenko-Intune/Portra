@@ -301,6 +301,15 @@ select.modalInput { appearance: none; -webkit-appearance: none; }
 }
 .footerSecure { display: flex; align-items: center; gap: 4px; }
 .footerMadeBy { font-weight: 500; }
+.footerUpdate { display: flex; align-items: center; gap: 2px; }
+button.linkBtn {
+  background: none; border: none; padding: 0;
+  font-size: 11px; font-weight: 500; color: var(--link);
+  text-decoration: underline; cursor: pointer;
+}
+button.linkBtn:hover { color: var(--accentHover); }
+button.linkBtn:disabled { color: var(--textSoft); text-decoration: none; cursor: default; }
+button.linkBtn.strong { font-weight: 700; text-decoration: none; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {

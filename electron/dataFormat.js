@@ -122,4 +122,17 @@ function parseCfgText(text) {
   if (!customers.length) throw new Error('Unsupported .cfg format');
   return { customers };
 }
-module.exports = { defaultData, isLaunchableUrl, sanitizeImportedData, parseCfgText };
+
+// Semantic version comparison for the update check. Returns >0 when a is newer than b.
+// Tolerates a leading "v" and missing components, as GitHub tags carry both forms.
+function compareVersions(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.').map(Number);
+  const pb = String(b).replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
+module.exports = { compareVersions, defaultData, isLaunchableUrl, sanitizeImportedData, parseCfgText };

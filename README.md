@@ -19,7 +19,8 @@ A secure desktop app for managing and launching customer portals with isolated b
 > xattr -dr com.apple.quarantine /Applications/Portra.app
 > ```
 >
-> Or build it locally instead, which avoids the problem entirely:
+> Or build it locally instead, which avoids the problem entirely (installs to
+> `~/Applications`):
 >
 > ```bash
 > npm install && npm run install:mac-local
@@ -51,7 +52,8 @@ A secure desktop app for managing and launching customer portals with isolated b
 - Search, light/dark mode, import/export
 - Import supports both **.json** and **.cfg** (including Portals app format)
 - Back / Forward / Reload / Copy URL / Open in default browser for portal windows, from the menu and the usual shortcuts
-- Automatic updates via GitHub Releases (Windows; see below for macOS)
+- Automatic updates via GitHub Releases on Windows. On macOS, where the app is not yet signed,
+  Portra says so and offers a manual **Check for Updates…**
 
 ## Security
 
@@ -64,7 +66,8 @@ A secure desktop app for managing and launching customer portals with isolated b
 - Portal windows may only load `https` URLs, and are granted only the permissions a portal needs
   (clipboard, fullscreen, USB/HID for security keys). Camera, microphone, geolocation and
   notifications are denied
-- All portal icons are bundled — the app itself makes no network requests
+- All portal icons are bundled. The only request Portra itself makes is the version check
+  against the GitHub Releases API, and only when you ask for it
 - No telemetry, no cloud backend, no sync, no accounts
 
 ### Platform differences worth knowing
@@ -72,7 +75,7 @@ A secure desktop app for managing and launching customer portals with isolated b
 | | Windows | macOS |
 |---|---|---|
 | Install | Signed installer, double-click | Unsigned — one `xattr` command, or build locally ([details](docs/MACOS.md)) |
-| Automatic updates | Yes | Disabled until the app is signed |
+| Automatic updates | Yes | Disabled until the app is signed. Portra says so in the footer and offers a manual check (also under **Portra → Check for Updates…**) |
 | Windows Hello | Yes | n/a |
 | Touch ID / iCloud Keychain passkey | n/a | **Not supported** — Electron does not expose the macOS platform authenticator |
 | Security key (YubiKey, USB) | Yes | Yes |

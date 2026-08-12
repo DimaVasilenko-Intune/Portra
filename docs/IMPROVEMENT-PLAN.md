@@ -1,6 +1,6 @@
 # Portra — review findings and improvement plan
 
-Review date: 2026-08-12 · Reviewed version: 0.5.3 · Reviewed on: macOS 26.6.1, Apple Silicon
+Review date: 2026-08-12 · Reviewed version: 0.5.3 · Released as: 0.6.0 · Reviewed on: macOS 26.6.1, Apple Silicon
 
 Every finding below was reproduced on this machine, not inferred from reading the code. The
 verification method is stated per finding so the result can be re-checked.
@@ -31,6 +31,7 @@ verification method is stated per finding so the result can be re-checked.
 | 16 | **No LICENSE file**, although `package.json` and the README both state MIT. | Low | Absent from the repository |
 | 17 | **No tests, and CI only ran on tags** — a broken `main` was invisible until release. | Medium | Workflow triggered on `push: tags: v*` only |
 | 18 | **Unencrypted storage was indistinguishable from encrypted storage.** Where `safeStorage` is unavailable, data was written as plain text into a file named `customers.enc`, with no indication. | Medium | Code path in `encrypt()`/`decrypt()`; the app now warns |
+| 19 | **macOS users had no update path and were not told.** The updater was silently failing on every launch (`autoUpdater.on('error', () => {})`). | Medium | Now skipped deliberately on macOS, stated in the footer, with a manual **Check for Updates…** |
 
 ### Known limitation, not fixable in this codebase
 
@@ -43,10 +44,10 @@ authenticator. Details and workarounds in [MACOS.md](MACOS.md).
 
 | # | Finding | Why it was left |
 |---|---|---|
-| 19 | Electron 40.10.6 → 43.4.0 (three Chromium majors behind) | Needs its own regression pass. 40.10.6 closes nearly all outstanding advisories at patch-level risk |
-| 20 | Portal windows can navigate to any https host | An allowlist of Microsoft sign-in and portal domains would be tighter, but risks blocking legitimate federated IdPs. Needs a decision on scope |
-| 21 | No renderer tests | The React layer is verified manually. Worth adding once the UI settles |
-| 22 | No way to clear a workspace session | There is no "sign out of this customer" action; `session.clearStorageData()` per partition would provide it |
+| 20 | Electron 40.10.6 → 43.4.0 (three Chromium majors behind) | Needs its own regression pass. 40.10.6 closes nearly all outstanding advisories at patch-level risk |
+| 21 | Portal windows can navigate to any https host | An allowlist of Microsoft sign-in and portal domains would be tighter, but risks blocking legitimate federated IdPs. Needs a decision on scope |
+| 22 | No renderer tests | The React layer is verified manually. Worth adding once the UI settles |
+| 23 | No way to clear a workspace session | There is no "sign out of this customer" action; `session.clearStorageData()` per partition would provide it |
 
 ---
 
@@ -62,12 +63,17 @@ authenticator. Details and workarounds in [MACOS.md](MACOS.md).
 
 3. **Apple Developer Program membership (99 USD/year)** and the five repository secrets listed
    in [MACOS.md](MACOS.md). This is the only thing standing between a macOS user and a
-   double-click install. The CI workflow is already wired for it; nothing else changes. Without
-   it, every macOS user has to run `xattr -dr com.apple.quarantine` after every update.
-4. **Decide whether the macOS auto-updater matters.** It is currently skipped on macOS because
-   Squirrel cannot verify an unsigned app. Signing (step 3) turns it back on. Until then, macOS
-   users have no update path at all and are not told so — worth an explicit "check for updates"
-   link in the UI if signing is deferred.
+   double-click install. The CI workflow is already wired for it; nothing else changes.
+
+   **Deferred 2026-08-12.** Until it happens, every macOS user runs
+   `xattr -dr com.apple.quarantine` after every update. That is acceptable for personal use; it
+   is not something to put in front of a colleague or a customer, so this decision should be
+   revisited before Portra is shared further.
+4. ~~**Decide whether the macOS auto-updater matters.**~~ **Decided 2026-08-12: signing is
+   deferred, so the gap is made visible instead.** The updater stays off on macOS, and Portra
+   now states that in the footer and offers a manual **Check for Updates…** against the GitHub
+   Releases API. Signing (step 3) turns the real updater back on and makes the notice
+   disappear on its own.
 5. **Confirm the passkey story you want to support on macOS.** If Touch ID is a requirement,
    Portra as an Electron app is the wrong vehicle and the question becomes whether to hand off
    sign-in to the system browser for the auth step. If security key or phone passkey is
@@ -84,7 +90,7 @@ authenticator. Details and workarounds in [MACOS.md](MACOS.md).
 9. Replace the ad-hoc `structuredClone` + `find` + mutate pattern in `src/main.jsx` with a small
    reducer. Six call sites repeat the same clone-find-mutate-persist sequence, and two of them
    duplicate the save call.
-10. Decide on the navigation allowlist for portal windows (finding 20).
+10. Decide on the navigation allowlist for portal windows (finding 21).
 
 ---
 

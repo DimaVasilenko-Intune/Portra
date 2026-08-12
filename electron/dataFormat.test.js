@@ -1,6 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { isLaunchableUrl, sanitizeImportedData, parseCfgText } = require('./dataFormat');
+const { compareVersions, isLaunchableUrl, sanitizeImportedData, parseCfgText } = require('./dataFormat');
+
+test('version comparison drives the update check', () => {
+  assert.ok(compareVersions('0.6.0', '0.5.3') > 0, '0.6.0 is newer than 0.5.3');
+  assert.ok(compareVersions('v0.6.0', '0.6.0') === 0, 'a leading v is ignored');
+  assert.ok(compareVersions('0.5.3', '0.6.0') < 0, 'older reports older');
+  assert.ok(compareVersions('0.10.0', '0.9.9') > 0, 'components compare numerically, not as strings');
+  assert.ok(compareVersions('1.0.0', '0.99.99') > 0);
+  assert.ok(compareVersions('0.6', '0.6.0') === 0, 'missing components count as zero');
+  assert.ok(compareVersions('0.6.1', '0.6') > 0);
+});
 
 test('only https URLs are launchable', () => {
   assert.equal(isLaunchableUrl('https://portal.azure.com'), true);

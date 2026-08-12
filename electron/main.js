@@ -2,7 +2,7 @@ const { app, BrowserWindow, Menu, ipcMain, shell, dialog, safeStorage, session }
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
-const { defaultData, isLaunchableUrl, sanitizeImportedData, parseCfgText } = require('./dataFormat');
+const { compareVersions, defaultData, isLaunchableUrl, sanitizeImportedData, parseCfgText } = require('./dataFormat');
 
 // Enable WebAuthn / FIDO2 / security keys on all platforms
 app.commandLine.appendSwitch('enable-features', 'WebAuthentication,WebAuthenticationConditionalUI');
@@ -171,6 +171,58 @@ function openPortalInternal({ customerId, url, customerName, portalName }) {
   return { ok: true };
 }
 
+/* ── Update checks ────────────────────────────────────────────────── */
+
+const RELEASES_PAGE = 'https://github.com/DimaVasilenko-Intune/Portra/releases/latest';
+const RELEASES_API = 'https://api.github.com/repos/DimaVasilenko-Intune/Portra/releases/latest';
+
+// Automatic updates are unavailable on macOS while the app is unsigned, so the version check
+// has to be explicit. This is the only network request Portra itself makes, it sends nothing
+// beyond the request, and it only runs when asked.
+function fetchLatestVersion() {
+  return new Promise((resolve, reject) => {
+    const req = require('https').get(
+      RELEASES_API,
+      { headers: { 'User-Agent': `Portra/${app.getVersion()}`, Accept: 'application/vnd.github+json' }, timeout: 10000 },
+      (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`GitHub returned ${res.statusCode}`));
+        }
+        let body = '';
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => {
+          try {
+            const tag = JSON.parse(body).tag_name;
+            if (!tag) throw new Error('No tag_name in response');
+            resolve(String(tag));
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    );
+    req.on('timeout', () => req.destroy(new Error('Request timed out')));
+    req.on('error', reject);
+  });
+}
+
+async function checkForUpdate() {
+  const current = app.getVersion();
+  try {
+    const latest = await fetchLatestVersion();
+    return {
+      ok: true,
+      current,
+      latest: latest.replace(/^v/, ''),
+      updateAvailable: compareVersions(latest, current) > 0,
+      releasesUrl: RELEASES_PAGE
+    };
+  } catch (err) {
+    return { ok: false, current, error: err.message, releasesUrl: RELEASES_PAGE };
+  }
+}
+
 /* ── Auto-updater ─────────────────────────────────────────────────── */
 
 function setupAutoUpdates() {
@@ -211,13 +263,66 @@ function buildMenu() {
     return win && win.webContents.getURL().startsWith('https:') ? win : null;
   };
 
+  const checkForUpdateItem = {
+    label: 'Check for Updates…',
+    click: async () => {
+      const result = await checkForUpdate();
+      if (!result.ok) {
+        await dialog.showMessageBox({
+          type: 'warning',
+          title: 'Could not check for updates',
+          message: 'Portra could not reach GitHub to check for a newer version.',
+          detail: result.error
+        });
+        return;
+      }
+      if (!result.updateAvailable) {
+        await dialog.showMessageBox({
+          type: 'info',
+          title: 'Portra is up to date',
+          message: `You are running the latest version (${result.current}).`
+        });
+        return;
+      }
+      const { response } = await dialog.showMessageBox({
+        type: 'info',
+        buttons: ['Open releases page', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Update available',
+        message: `Portra ${result.latest} is available. You are running ${result.current}.`,
+        detail: isMac
+          ? 'Portra cannot update itself on macOS while it is unsigned. Download the new version, then run:\n\nxattr -dr com.apple.quarantine /Applications/Portra.app'
+          : undefined
+      });
+      if (response === 0) shell.openExternal(result.releasesUrl);
+    }
+  };
+
   const template = [
-    ...(isMac ? [{ role: 'appMenu' }] : []),
+    ...(isMac
+      ? [{
+          label: app.name,
+          submenu: [
+            { role: 'about' },
+            { type: 'separator' },
+            checkForUpdateItem,
+            { type: 'separator' },
+            { role: 'services' },
+            { type: 'separator' },
+            { role: 'hide' },
+            { role: 'hideOthers' },
+            { role: 'unhide' },
+            { type: 'separator' },
+            { role: 'quit' }
+          ]
+        }]
+      : []),
     {
       label: 'File',
       submenu: [
         { role: 'close' },
-        ...(isMac ? [] : [{ role: 'quit' }])
+        ...(isMac ? [] : [checkForUpdateItem, { type: 'separator' }, { role: 'quit' }])
       ]
     },
     { role: 'editMenu' },
@@ -408,6 +513,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('app:platform', () => process.platform);
+  // Auto-updates only work where the app is signed, so tell the renderer which it is.
+  ipcMain.handle('app:autoUpdates', () => !isMac);
+  ipcMain.handle('app:checkUpdate', () => checkForUpdate());
+  ipcMain.handle('app:openReleases', () => shell.openExternal(RELEASES_PAGE));
 
   buildMenu();
   createWindow();

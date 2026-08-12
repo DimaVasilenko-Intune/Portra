@@ -4,9 +4,10 @@
 // A local build is never quarantined, so it launches without the Gatekeeper prompt that blocks
 // downloaded builds. See docs/MACOS.md.
 
-import { existsSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync, mkdirSync, accessSync, constants } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 if (process.platform !== 'darwin') {
   console.error('This script only applies to macOS.');
@@ -29,18 +30,43 @@ if (!candidates.length) {
 }
 
 const source = candidates[0];
-const target = '/Applications/Portra.app';
+
+// macOS 13+ gates modifying anything inside /Applications behind the App Management
+// permission, which a terminal usually does not have — replacing an existing app there fails
+// with EACCES even for an admin user. ~/Applications carries no such gate and works
+// identically for Spotlight and Launchpad, so prefer it and only use /Applications when it is
+// genuinely writable.
+function pickInstallDir() {
+  try {
+    accessSync('/Applications', constants.W_OK);
+    // Writable is not sufficient — App Management denials also surface here.
+    const probe = '/Applications/.portra-install-probe';
+    mkdirSync(probe);
+    rmSync(probe, { recursive: true, force: true });
+    return '/Applications';
+  } catch {
+    const userApps = join(homedir(), 'Applications');
+    mkdirSync(userApps, { recursive: true });
+    return userApps;
+  }
+}
+
+const installDir = pickInstallDir();
+const target = join(installDir, 'Portra.app');
 
 console.log(`Installing ${source} -> ${target}`);
+if (installDir !== '/Applications') {
+  console.log('(/Applications is not writable from a terminal — see docs/MACOS.md)');
+}
 
 try {
-  execFileSync('pkill', ['-f', '/Applications/Portra.app/Contents/MacOS'], { stdio: 'ignore' });
+  execFileSync('pkill', ['-f', 'Portra.app/Contents/MacOS/Portra'], { stdio: 'ignore' });
 } catch {
   // Not running — nothing to stop.
 }
 
 rmSync(target, { recursive: true, force: true });
-execFileSync('cp', ['-R', source, '/Applications/'], { stdio: 'inherit' });
+execFileSync('cp', ['-R', source, installDir + '/'], { stdio: 'inherit' });
 execFileSync('xattr', ['-dr', 'com.apple.quarantine', target], { stdio: 'ignore' });
 
 // Report whether Gatekeeper would accept this build, so the signing status is never a surprise.
@@ -52,5 +78,5 @@ try {
   console.log('A downloaded build would need the same treatment. See docs/MACOS.md.');
 }
 
-execFileSync('open', ['-a', 'Portra'], { stdio: 'inherit' });
-console.log('Portra launched.');
+execFileSync('open', [target], { stdio: 'inherit' });
+console.log(`Portra launched from ${target}`);

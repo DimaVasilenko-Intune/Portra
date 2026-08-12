@@ -20,6 +20,8 @@ function App() {
   const [modal, setModal] = useState(null)
   const [readError, setReadError] = useState(null)
   const [plaintextWarning, setPlaintextWarning] = useState(false)
+  const [autoUpdates, setAutoUpdates] = useState(true)
+  const [updateState, setUpdateState] = useState(null)
 
   const notify = useCallback((msg) => setToast(msg), [])
   const closeModal = useCallback(() => setModal(null), [])
@@ -44,7 +46,16 @@ function App() {
     window.orbit.getPlatform?.().then(p => {
       if (p) document.documentElement.setAttribute('data-platform', p)
     })
+    window.orbit.hasAutoUpdates?.().then(v => setAutoUpdates(v !== false))
   }, [])
+
+  const checkForUpdate = async () => {
+    setUpdateState({ checking: true })
+    const res = await window.orbit.checkUpdate()
+    setUpdateState(res)
+    if (res?.ok && !res.updateAvailable) notify('Portra is up to date')
+    if (res?.ok === false) notify('Could not reach GitHub to check for updates')
+  }
 
   const filtered = useMemo(() => {
     const s = q.toLowerCase().trim()
@@ -351,6 +362,22 @@ function App() {
 
       <footer className="appFooter">
         <span>Portra{version ? ` v${version}` : ''}</span>
+        {!autoUpdates && (
+          <span className="footerUpdate">
+            Automatic updates are unavailable on macOS —{' '}
+            <button className="linkBtn" onClick={checkForUpdate} disabled={updateState?.checking}>
+              {updateState?.checking ? 'checking…' : 'check for updates'}
+            </button>
+            {updateState?.ok && updateState.updateAvailable && (
+              <>
+                {' · '}
+                <button className="linkBtn strong" onClick={() => window.orbit.openReleases()}>
+                  v{updateState.latest} available
+                </button>
+              </>
+            )}
+          </span>
+        )}
         <span className="footerSecure"><IconShield /> Encrypted locally</span>
         <span className="footerMadeBy">Made by DimaVasilenko</span>
       </footer>

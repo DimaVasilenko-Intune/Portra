@@ -34,8 +34,17 @@ npm install
 npm run install:mac-local
 ```
 
-This builds a universal app, copies it to `/Applications`, strips the quarantine attribute and
-launches it.
+This builds the app, installs it, strips the quarantine attribute and launches it.
+
+It installs to `~/Applications`, not `/Applications`. macOS 13 and later gate any modification
+of an app already inside `/Applications` behind the **App Management** permission, which a
+terminal normally does not hold — replacing an app there fails with `EACCES` even for an admin
+user, and the failure can leave an empty `Portra.app` directory behind that the terminal then
+cannot delete either. `~/Applications` has no such gate and behaves identically for Spotlight and
+Launchpad. The script probes `/Applications` first and uses it when it really is writable.
+
+If you want Portra in `/Applications` anyway, either drag it there in Finder, or grant your
+terminal App Management under **System Settings → Privacy & Security → App Management**.
 
 **Option 2 — use a downloaded build:** after dragging Portra to `/Applications`, remove the
 quarantine attribute:
@@ -52,8 +61,13 @@ stripping quarantine disables the only check macOS performs on an unsigned app.
 ## Shipping signed and notarized builds
 
 This is the real fix. Once it is in place, macOS users just drag and run, and the auto-updater
-starts working (Squirrel refuses to apply updates to an unsigned app, so Portra currently skips
-the updater entirely on macOS).
+starts working.
+
+Until then, Squirrel refuses to apply updates to an unsigned app, so Portra skips the updater
+entirely on macOS. Instead it states this in the footer and offers a manual check —
+**Portra → Check for Updates…**, which compares the running version against the GitHub Releases
+API and links to the download. That version check is the only network request Portra itself
+makes, and it only runs when asked.
 
 What is needed:
 

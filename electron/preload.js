@@ -7,5 +7,8 @@ contextBridge.exposeInMainWorld('orbit', {
   exportData: (data) => ipcRenderer.invoke('data:export', data),
   importData: () => ipcRenderer.invoke('data:import'),
   getVersion: () => ipcRenderer.invoke('app:version'),
-  getPlatform: () => ipcRenderer.invoke('app:platform')
+  getPlatform: () => ipcRenderer.invoke('app:platform'),
+  hasAutoUpdates: () => ipcRenderer.invoke('app:autoUpdates'),
+  checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
+  openReleases: () => ipcRenderer.invoke('app:openReleases')
 });
