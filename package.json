@@ -1,6 +1,6 @@
 {
   "name": "portra",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Portra - secure multi-customer portal workspace",
   "main": "electron/main.js",
   "scripts": {
@@ -23,8 +23,9 @@
     "files": [
       "dist/**",
       "electron/**",
+      "!electron/**/*.test.js",
       "package.json",
-      "build/**"
+      "build/icon.*"
     ],
     "directories": {
       "output": "release",
@@ -87,13 +88,14 @@
       }
     ]
   },
+  "comment": "react/react-dom are build-time only — Vite bundles them into dist/. Keeping them out of dependencies stops electron-builder shipping a second unused copy inside the app.",
   "dependencies": {
-    "electron-updater": "^6.3.9",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
     "electron": "^40.10.6",

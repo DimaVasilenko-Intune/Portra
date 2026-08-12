@@ -4,3 +4,22 @@ release/
 .DS_Store
 npm-debug.log*
 installers/
+
+# Never commit Portra's own data or exports to a public repo — they contain customer
+# names and admin usernames. Belt-and-braces: this data normally lives in the OS
+# user profile, not here, but an export saved into the repo would be a real leak.
+customers.enc
+customers.enc.unreadable-*
+customers.json
+portra-export*.json
+*.enc
+
+# Signing material must never be committed. It belongs in GitHub Actions secrets.
+*.p12
+*.pfx
+*.cer
+*.pem
+*.key
+*.mobileprovision
+.env
+.env.*
