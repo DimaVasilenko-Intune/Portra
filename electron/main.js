@@ -158,12 +158,24 @@ function createPortalWindow(ses, title) {
   return win;
 }
 
+// Second line of defence. Imports are sanitised, but the partition name is the isolation
+// boundary, so never build one from an id that has not been checked right here.
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+function partitionFor(customerId) {
+  if (!SAFE_ID.test(String(customerId ?? ''))) return null;
+  return `persist:workspace-${customerId}`;
+}
+
 function openPortalInternal({ customerId, url, customerName, portalName }) {
   if (!isLaunchableUrl(url)) return { ok: false, error: 'Only https URLs can be opened.' };
 
   // Each customer gets an isolated Electron session: separate cookies, localStorage and
   // auth state, so no system browser profile or other tenant's session leaks in.
-  const ses = session.fromPartition(`persist:workspace-${customerId}`);
+  const partition = partitionFor(customerId);
+  if (!partition) return { ok: false, error: 'This customer has an invalid id and cannot be opened.' };
+
+  const ses = session.fromPartition(partition);
   configureSession(ses);
 
   const title = [customerName, portalName].filter(Boolean).join(' — ') || 'Portra Browser';
@@ -510,6 +522,41 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('portal:open', (_e, payload) => openPortalInternal(payload || {}));
+
+  // Signing out is the only way to get a workspace's credentials off disk. Portal session
+  // cookies and the tokens portals keep in localStorage are stored unencrypted by Chromium —
+  // see docs/SECURITY.md — so a workspace left signed in is a credential sitting on disk.
+  ipcMain.handle('portal:signOut', async (_e, { customerId, customerName } = {}) => {
+    const partition = partitionFor(customerId);
+    if (!partition) return { ok: false, error: 'Invalid customer id.' };
+
+    const { response } = await dialog.showMessageBox({
+      type: 'warning',
+      buttons: ['Sign out', 'Cancel'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'Sign out of workspace',
+      message: `Sign out of ${customerName || 'this workspace'}?`,
+      detail: 'Clears cookies, tokens and cached site data for this customer only. Your portal list and username are kept.'
+    });
+    if (response !== 0) return { ok: false, canceled: true };
+
+    const ses = session.fromPartition(partition);
+
+    // Close this workspace's windows first, or the pages just write their state back.
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (win.webContents.session === ses) win.destroy();
+    }
+
+    try {
+      await ses.clearStorageData();
+      await ses.clearCache();
+      await ses.clearAuthCache();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
 
   ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('app:platform', () => process.platform);

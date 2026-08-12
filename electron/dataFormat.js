@@ -27,8 +27,28 @@ function isLaunchableUrl(value) {
   }
 }
 
+function newId() {
+  return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`.replace(/\./g, '');
+}
+
+// The customer id becomes the Electron session partition name — `persist:workspace-<id>` —
+// which in turn becomes a directory under Partitions/. An imported id is untrusted input, so:
+//   - only safe characters are allowed, keeping it out of path separators and traversal;
+//   - ids must be unique, because two customers sharing an id share one session, which is
+//     exactly the cross-tenant leakage the partitioning exists to prevent.
+// Anything failing either rule gets a fresh id. Ids are internal, so regenerating one costs
+// nothing beyond signing in to that workspace again.
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+function safeCustomerId(candidate, taken) {
+  const id = SAFE_ID.test(String(candidate ?? '')) && !taken.has(candidate) ? String(candidate) : newId();
+  taken.add(id);
+  return id;
+}
+
 function sanitizeImportedData(parsed) {
   const customers = Array.isArray(parsed?.customers) ? parsed.customers : [];
+  const takenIds = new Set();
   return {
     customers: customers
       .filter((c) => c && typeof c.name === 'string')
@@ -47,7 +67,7 @@ function sanitizeImportedData(parsed) {
           : undefined;
 
         return {
-          id: c.id || (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`),
+          id: safeCustomerId(c.id, takenIds),
           name: c.name.trim() || 'Customer',
           username: (typeof c.username === 'string' ? c.username : legacyUsername || '').trim(),
           portals
@@ -74,7 +94,7 @@ function parseCfgText(text) {
       const customers = users.map((u, idx) => {
         const customerName = u.friendlyName || u.tenant || u.name || `Customer ${idx + 1}`;
         return {
-          id: `${Date.now()}-${Math.random()}-${idx}`,
+          id: newId(),
           name: String(customerName),
           username: typeof u.name === 'string' ? u.name : '',
           portals: defaultPortals.map((p) => ({ ...p }))
@@ -95,7 +115,7 @@ function parseCfgText(text) {
 
     const sectionMatch = line.match(/^\[(.+?)\]$/);
     if (sectionMatch) {
-      current = { id: `${Date.now()}-${Math.random()}`, name: sectionMatch[1], username: '', portals: [] };
+      current = { id: newId(), name: sectionMatch[1], username: '', portals: [] };
       customers.push(current);
       continue;
     }
@@ -111,7 +131,7 @@ function parseCfgText(text) {
       const [customerName, portalName, url, username = ''] = parts;
       let customer = customers.find((c) => c.name === customerName);
       if (!customer) {
-        customer = { id: `${Date.now()}-${Math.random()}`, name: customerName, username: '', portals: [] };
+        customer = { id: newId(), name: customerName, username: '', portals: [] };
         customers.push(customer);
       }
       customer.portals.push({ name: portalName, url });
@@ -135,4 +155,4 @@ function compareVersions(a, b) {
   return 0;
 }
 
-module.exports = { compareVersions, defaultData, isLaunchableUrl, sanitizeImportedData, parseCfgText };
+module.exports = { compareVersions, defaultData, isLaunchableUrl, newId, safeCustomerId, sanitizeImportedData, parseCfgText };

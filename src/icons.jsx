@@ -38,6 +38,9 @@ export const IconChevron = ({ open }) => (
 export const IconShield = () => (
   <svg {...s}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 )
+export const IconSignOut = () => (
+  <svg {...s}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5m5 5H9"/></svg>
+)
 
 // Portal logo component — uses explicit icon paths from catalog
 export const PortalIcon = ({ icon, name }) => {

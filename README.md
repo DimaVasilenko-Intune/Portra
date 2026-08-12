@@ -48,6 +48,7 @@ A secure desktop app for managing and launching customer portals with isolated b
 - **Built-in isolated browser** — each customer workspace opens portals in its own browser session with separate cookies and auth state (no Windows SSO leaking between tenants)
 - Multi-select when adding portals (pick several at once)
 - One username per customer workspace (encrypted at rest)
+- Sign out of a single workspace, clearing its cookies, tokens and cached data
 - Passkey / security key support (YubiKey, Windows Hello, etc.)
 - Search, light/dark mode, import/export
 - Import supports both **.json** and **.cfg** (including Portals app format)
@@ -57,11 +58,17 @@ A secure desktop app for managing and launching customer portals with isolated b
 
 ## Security
 
-- **100% local** — all data stays on your machine under your OS user profile
-- Usernames are encrypted at rest with Electron `safeStorage` (OS keychain). If no keychain is
-  available, Portra says so in the app rather than storing plain text silently
-- Passwords are never stored or handled by the app
-- Each customer workspace uses a dedicated Electron session with isolated cookies, localStorage, and auth — no cross-tenant leakage
+Full assessment, with what was measured and how: **[docs/SECURITY.md](docs/SECURITY.md)**. The
+short version:
+
+- **Passwords are never stored, read or handled by Portra.** No password field, no password
+  manager, no autofill store — you type into a Chromium window that posts straight to Microsoft
+- **100% local** — all data stays on your machine under your OS user profile, directory mode `700`
+- Customer names, portal lists and usernames are encrypted at rest with Electron `safeStorage`
+  (OS keychain). If no keychain is available, Portra says so in the app rather than storing plain
+  text silently
+- Each customer workspace uses a dedicated Electron session with isolated cookies, localStorage
+  and auth. Verified: a cookie in one workspace is invisible to every other workspace
 - Context isolation and the Chromium sandbox are enabled in every window, including portal windows
 - Portal windows may only load `https` URLs, and are granted only the permissions a portal needs
   (clipboard, fullscreen, USB/HID for security keys). Camera, microphone, geolocation and
@@ -69,6 +76,20 @@ A secure desktop app for managing and launching customer portals with isolated b
 - All portal icons are bundled. The only request Portra itself makes is the version check
   against the GitHub Releases API, and only when you ask for it
 - No telemetry, no cloud backend, no sync, no accounts
+
+### Two limits you should know about
+
+**Portal session cookies and tokens are stored unencrypted.** Electron does not encrypt the
+Chromium cookie store and offers no way to enable it, so your signed-in Entra sessions sit in
+plain text under your home directory. A session cookie is a bearer credential — it works without
+your password or MFA. Anything able to read files as your user can replay it. Chrome and Edge
+encrypt cookies with a keychain key, so Portra currently sets a lower bar while holding
+higher-value sessions. **Use the sign-out button on workspaces you are not actively using**, keep
+FileVault on, and set a Conditional Access sign-in frequency.
+
+**Portra is not code-signed**, so nothing verifies its integrity — any process running as you
+could modify the app without macOS objecting. Signing is a pending decision, see
+[docs/MACOS.md](docs/MACOS.md).
 
 ### Platform differences worth knowing
 
@@ -104,6 +125,7 @@ npm run dist:mac
 
 ## Documentation
 
+- [docs/SECURITY.md](docs/SECURITY.md) — what is and is not protected, measured rather than claimed
 - [docs/MACOS.md](docs/MACOS.md) — macOS install, code signing, passkey support, data location
 - [docs/IMPROVEMENT-PLAN.md](docs/IMPROVEMENT-PLAN.md) — review findings and prioritised plan
 

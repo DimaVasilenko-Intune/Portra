@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
-import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield, PortalIcon } from './icons'
+import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield, IconSignOut, PortalIcon } from './icons'
 import { InputModal, PortalModal, ConfirmModal, CustomerModal } from './Modal'
 import { getStandardPortals, PORTAL_CATALOG } from './portalCatalog'
 import './styles.css'
@@ -233,6 +233,12 @@ function App() {
     if (res && res.ok === false) notify(res.error || 'Could not open portal')
   }
 
+  const signOut = async (customer) => {
+    const res = await window.orbit.signOutPortal({ customerId: customer.id, customerName: customer.name })
+    if (res?.ok) notify(`Signed out of "${customer.name}"`)
+    else if (res?.error) notify(res.error)
+  }
+
   const exportData = async () => {
     const res = await window.orbit.exportData(data)
     if (res?.ok) notify('Data exported')
@@ -315,6 +321,7 @@ function App() {
               <span className="portalCount">{c.portals.length} portal{c.portals.length !== 1 ? 's' : ''}</span>
               <div className="cardActions" onClick={e => e.stopPropagation()}>
                 <button className="ghost small" onClick={() => addPortal(c.id)}><IconPlus /> Portal</button>
+                <button className="iconBtn" onClick={() => signOut(c)} title="Sign out of this workspace — clears its cookies and tokens"><IconSignOut /></button>
                 <button className="iconBtn" onClick={() => renameCustomer(c.id)} title="Rename"><IconEdit /></button>
                 <button className="iconBtn dangerHover" onClick={() => deleteCustomer(c.id)} title="Delete"><IconTrash /></button>
               </div>

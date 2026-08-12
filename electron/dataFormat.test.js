@@ -74,6 +74,42 @@ test('non-https and malformed portals are dropped on import', () => {
   assert.deepEqual(imported.customers[0].portals.map((p) => p.name), ['Fine']);
 });
 
+// The customer id becomes the session partition directory name, so it is a security boundary.
+test('imported ids that could escape the partition directory are replaced', () => {
+  const hostile = {
+    customers: [
+      { id: '../../../../tmp/escape', name: 'Traversal', portals: [] },
+      { id: 'a/b/nested', name: 'Slashes', portals: [] },
+      { id: '..', name: 'Dots', portals: [] },
+      { id: 'has space', name: 'Space', portals: [] },
+      { id: 'x'.repeat(200), name: 'TooLong', portals: [] },
+      { id: '', name: 'Empty', portals: [] }
+    ]
+  };
+  for (const c of sanitizeImportedData(hostile).customers) {
+    assert.match(c.id, /^[A-Za-z0-9_-]{1,64}$/, `${c.name} kept an unsafe id: ${c.id}`);
+  }
+});
+
+test('duplicate imported ids are broken apart so workspaces cannot share a session', () => {
+  const collision = {
+    customers: [
+      { id: 'same', name: 'Tenant A', portals: [] },
+      { id: 'same', name: 'Tenant B', portals: [] },
+      { id: 'same', name: 'Tenant C', portals: [] }
+    ]
+  };
+  const ids = sanitizeImportedData(collision).customers.map((c) => c.id);
+  assert.equal(new Set(ids).size, 3, `ids must be unique, got ${ids.join(',')}`);
+  assert.equal(ids[0], 'same', 'the first claimant keeps its id, so existing sessions survive');
+});
+
+test('a valid uuid survives import unchanged, so sessions are not lost', () => {
+  const id = '3f2b9c1e-7a4d-4b8e-9c11-2d5e6f7a8b90';
+  const out = sanitizeImportedData({ customers: [{ id, name: 'Contoso', portals: [] }] });
+  assert.equal(out.customers[0].id, id);
+});
+
 test('customers without a name are dropped, ids are generated', () => {
   const imported = sanitizeImportedData({ customers: [{ portals: [] }, { name: 'Keep', portals: [] }] });
   assert.equal(imported.customers.length, 1);
