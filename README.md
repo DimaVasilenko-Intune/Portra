@@ -96,7 +96,7 @@ could modify the app without macOS objecting. Signing is a pending decision, see
 
 | | Windows | macOS |
 |---|---|---|
-| Install | Signed installer, double-click | Unsigned — one `xattr` command, or build locally ([details](docs/MACOS.md)) |
+| Install | Double-click. Not signed with a trusted publisher, so SmartScreen may warn | Unsigned — one `xattr` command, or build locally ([details](docs/MACOS.md)) |
 | Automatic updates | Yes | Disabled until the app is signed. Portra says so in the footer and offers a manual check (also under **Portra → Check for Updates…**) |
 | Windows Hello | Yes | n/a |
 | Touch ID / iCloud Keychain passkey | n/a | **Not supported** — Electron does not expose the macOS platform authenticator |
