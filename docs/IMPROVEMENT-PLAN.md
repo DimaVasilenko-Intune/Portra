@@ -29,7 +29,7 @@ verification method is stated per finding so the result can be re-checked.
 | 14 | **Import replaced the entire workspace with no confirmation and no backup.** | Medium | `saveData(sanitized)` ran immediately after parsing |
 | 15 | **Electron 40.4.1 was 6 patch releases behind**, missing ~30 published security fixes including several rated 7.5–8.3. | Medium | `npm audit` against the pinned version |
 | 16 | **No LICENSE file**, although `package.json` and the README both state MIT. | Low | Absent from the repository |
-| 17 | **No tests, and CI only ran on tags** — a broken `main` was invisible until release. | Medium | Workflow triggered on `push: tags: v*` only |
+| 17 | **No tests, and CI only ran on tags** — a broken `main` was invisible until release. | Medium | Workflow triggered on `push: tags: v*` only; now also on pushes to `main` and on pull requests |
 | 18 | **Unencrypted storage was indistinguishable from encrypted storage.** Where `safeStorage` is unavailable, data was written as plain text into a file named `customers.enc`, with no indication. | Medium | Code path in `encrypt()`/`decrypt()`; the app now warns |
 | 19 | **macOS users had no update path and were not told.** The updater was silently failing on every launch (`autoUpdater.on('error', () => {})`). | Medium | Now skipped deliberately on macOS, stated in the footer, with a manual **Check for Updates…** |
 

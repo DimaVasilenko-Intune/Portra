@@ -2,13 +2,16 @@ name: Build & Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   pull_request:
   workflow_dispatch:
 
 jobs:
-  # Fast feedback on every PR: the renderer must build and the main process must parse.
+  # Runs on every push to main, every PR and every tag — work lands on main directly here, so
+  # gating only pull requests would leave main unchecked.
   check:
     runs-on: ubuntu-latest
     steps:
