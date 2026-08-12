@@ -5,11 +5,14 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "test": "node --test \"electron/**/*.test.js\"",
+    "check": "node --check electron/main.js && node --check electron/preload.js && node --check electron/dataFormat.js && npm test",
     "build": "vite build",
     "dist": "npm run build && electron-builder -w -m",
     "start": "npm run build && electron .",
     "dist:win": "npm run build && electron-builder -w --x64",
-    "dist:mac": "npm run build && electron-builder -m"
+    "dist:mac": "npm run build && electron-builder -m",
+    "install:mac-local": "npm run build && electron-builder -m dir && node scripts/install-mac-local.mjs"
   },
   "keywords": [],
   "author": "Portra",
@@ -33,19 +36,26 @@
         {
           "target": "dmg",
           "arch": [
-            "x64",
-            "arm64"
+            "universal"
           ]
         },
         {
           "target": "zip",
           "arch": [
-            "x64",
-            "arm64"
+            "universal"
           ]
         }
       ],
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "A portal page you opened requested camera access.",
+        "NSMicrophoneUsageDescription": "A portal page you opened requested microphone access.",
+        "NSBluetoothAlwaysUsageDescription": "Portra uses Bluetooth to reach a security key when you sign in to a portal."
+      }
     },
     "win": {
       "target": [
@@ -78,15 +88,15 @@
     ]
   },
   "dependencies": {
+    "electron-updater": "^6.3.9",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "electron-updater": "^6.3.9"
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
-    "electron": "^40.4.1",
+    "electron": "^40.10.6",
     "electron-builder": "^26.7.0",
     "vite": "^7.3.1",
     "wait-on": "^9.0.4"

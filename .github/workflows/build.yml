@@ -4,9 +4,26 @@ on:
   push:
     tags:
       - 'v*'
+  pull_request:
+  workflow_dispatch:
 
 jobs:
+  # Fast feedback on every PR: the renderer must build and the main process must parse.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+
   build-win:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
     runs-on: windows-latest
     permissions:
       contents: write
@@ -15,11 +32,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - run: npm ci
       - run: npm run dist:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-mac:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
     runs-on: macos-latest
     permissions:
       contents: write
@@ -28,11 +49,44 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - run: npm ci
-      - run: npm run dist:mac
+
+      # Signed + notarized when the Apple secrets are present. Without them the build still
+      # produces an ad-hoc signed app, which macOS Gatekeeper will refuse to open on any
+      # machine that downloaded it — see docs/MACOS.md.
+      - name: Build (signed & notarized)
+        if: env.MAC_CERT != ''
+        run: npm run dist:mac -- -c.mac.notarize=true
         env:
+          MAC_CERT: ${{ secrets.MAC_CERT_P12 }}
+          CSC_LINK: ${{ secrets.MAC_CERT_P12 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build (unsigned)
+        if: env.MAC_CERT == ''
+        run: npm run dist:mac
+        env:
+          MAC_CERT: ${{ secrets.MAC_CERT_P12 }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Gatekeeper acceptance
+        run: |
+          APP="release/mac-universal/Portra.app"
+          codesign -dv --verbose=2 "$APP" 2>&1 || true
+          if spctl -a -t exec -vvv "$APP" 2>&1; then
+            echo "Gatekeeper: accepted"
+          else
+            echo "::warning::Gatekeeper rejects this build — macOS users must strip the quarantine attribute manually. Add the MAC_CERT_P12 / APPLE_* secrets to ship a notarized app."
+          fi
+
   publish:
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [build-win, build-mac]
     runs-on: ubuntu-latest
     permissions:

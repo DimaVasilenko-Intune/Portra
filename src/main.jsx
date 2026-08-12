@@ -18,6 +18,8 @@ function App() {
   const [toast, setToast] = useState(null)
   const [version, setVersion] = useState('')
   const [modal, setModal] = useState(null)
+  const [readError, setReadError] = useState(null)
+  const [plaintextWarning, setPlaintextWarning] = useState(false)
 
   const notify = useCallback((msg) => setToast(msg), [])
   const closeModal = useCallback(() => setModal(null), [])
@@ -29,12 +31,19 @@ function App() {
 
   useEffect(() => {
     window.orbit.loadData().then((d) => {
-      setData(d)
+      setData({ customers: d.customers || [] })
+      if (d.readError) setReadError(d.readError)
+      if (d.encryptionAvailable === false) setPlaintextWarning(true)
       const e = {}
-      d.customers.forEach(c => (e[c.id] = false))
+      ;(d.customers || []).forEach(c => (e[c.id] = false))
       setExpanded(e)
     })
     window.orbit.getVersion?.().then(v => setVersion(v || ''))
+    // The macOS traffic lights sit on top of the content with titleBarStyle: hiddenInset,
+    // so the header needs extra top inset there.
+    window.orbit.getPlatform?.().then(p => {
+      if (p) document.documentElement.setAttribute('data-platform', p)
+    })
   }, [])
 
   const filtered = useMemo(() => {
@@ -50,10 +59,15 @@ function App() {
     portals: data.customers.reduce((a, c) => a + c.portals.length, 0)
   }), [data])
 
+  const save = useCallback(async (next) => {
+    const res = await window.orbit.saveData(next)
+    if (res && res.ok === false) notify(res.error || 'Could not save changes')
+  }, [notify])
+
   const persist = useCallback((next) => {
     setData(next)
-    window.orbit.saveData(next)
-  }, [])
+    save(next)
+  }, [save])
 
   // --- Customer ---
   const addCustomer = () => {
@@ -75,7 +89,7 @@ function App() {
             }
 
             next.customers.push({ id, name, username: '', portals })
-            window.orbit.saveData(next)
+            save(next)
             return next
           })
           setExpanded(prev => ({ ...prev, [id]: true }))
@@ -201,6 +215,13 @@ function App() {
     try { await navigator.clipboard.writeText(username); notify('Copied to clipboard') } catch {}
   }
 
+  const openPortal = async (customer, portal) => {
+    const res = await window.orbit.openPortal({
+      customerId: customer.id, url: portal.url, customerName: customer.name, portalName: portal.name
+    })
+    if (res && res.ok === false) notify(res.error || 'Could not open portal')
+  }
+
   const exportData = async () => {
     const res = await window.orbit.exportData(data)
     if (res?.ok) notify('Data exported')
@@ -209,17 +230,18 @@ function App() {
   const importData = async () => {
     const res = await window.orbit.importData()
     if (res?.ok) {
-      setData(res.data)
+      setData({ customers: res.data.customers })
       const e = {}
       res.data.customers.forEach(c => (e[c.id] = false))
       setExpanded(e)
-      notify('Data imported')
+      notify(`Imported ${res.data.customers.length} customer(s)`)
     }
     if (res?.error) notify(res.error)
   }
 
   return (
     <div className="app">
+      <div className="titlebarDrag" />
       {modal}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
 
@@ -238,6 +260,29 @@ function App() {
           <button className="primary" onClick={addCustomer}><IconPlus /> Customer</button>
         </div>
       </header>
+
+      {readError && (
+        <div className="alert">
+          <strong>Your saved data could not be decrypted.</strong>
+          <span>
+            Nothing has been deleted — the file is kept at <code>{readError.backupPath}</code>.
+            {readError.encryptionAvailable
+              ? ' This usually means the OS keychain denied access to Portra, often after an app update changed its code signature.'
+              : ' OS-level encryption is unavailable on this machine.'}
+            {' '}Changes cannot be saved until this is resolved.
+          </span>
+        </div>
+      )}
+
+      {plaintextWarning && !readError && (
+        <div className="alert">
+          <strong>Usernames are being stored unencrypted.</strong>
+          <span>
+            This machine has no OS keychain available to Portra, so <code>customers.enc</code> is
+            written as plain text. Avoid storing anything sensitive until this is resolved.
+          </span>
+        </div>
+      )}
 
       <div className="searchWrap">
         <IconSearch />
@@ -290,7 +335,7 @@ function App() {
                       </div>
                     </div>
                     <div className="portalActions">
-                      <button className="primary compact" onClick={() => window.orbit.openPortal({ customerId: c.id, url: p.url, customerName: c.name, portalName: p.name })}>
+                      <button className="primary compact" onClick={() => openPortal(c, p)}>
                         <IconExternalLink /> Open
                       </button>
                       <button className="iconBtn" onClick={() => editPortal(c.id, i)} title="Edit"><IconEdit /></button>

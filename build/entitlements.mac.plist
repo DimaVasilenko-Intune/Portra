@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Required by Chromium/V8 under the hardened runtime. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+
+  <!-- Security keys (YubiKey and similar) are reached over USB/HID. -->
+  <key>com.apple.security.device.usb</key>
+  <true/>
+
+  <!-- safeStorage stores the encryption key in the login keychain. -->
+  <key>com.apple.security.keychain-access-groups</key>
+  <array>
+    <string>$(AppIdentifierPrefix)com.dmivas.portra</string>
+  </array>
+</dict>
+</plist>
