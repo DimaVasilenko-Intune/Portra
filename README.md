@@ -50,6 +50,7 @@ A secure desktop app for managing and launching customer portals with isolated b
 - One username per customer workspace (encrypted at rest)
 - Sign out of a single workspace, clearing its cookies, tokens and cached data
 - Passkey / security key support (YubiKey, Windows Hello, etc.)
+- Sort customers: custom order (drag to rearrange), name A–Z, name Z–A, most used
 - Search, light/dark mode, import/export
 - Import supports both **.json** and **.cfg** (including Portals app format)
 - Back / Forward / Reload / Copy URL / Open in default browser for portal windows, from the menu and the usual shortcuts

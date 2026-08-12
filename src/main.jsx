@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
-import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield, IconSignOut, PortalIcon } from './icons'
+import { IconSun, IconMoon, IconPlus, IconSearch, IconEdit, IconTrash, IconCopy, IconExternalLink, IconDownload, IconUpload, IconChevron, IconShield, IconSignOut, IconGrip, PortalIcon } from './icons'
 import { InputModal, PortalModal, ConfirmModal, CustomerModal } from './Modal'
 import { getStandardPortals, PORTAL_CATALOG } from './portalCatalog'
+import { SORT_MODES, sortCustomers, moveCustomer } from './sortCustomers.mjs'
 import './styles.css'
 
 function Toast({ message, onDone }) {
@@ -15,6 +16,10 @@ function App() {
   const [q, setQ] = useState('')
   const [expanded, setExpanded] = useState({})
   const [theme, setTheme] = useState(localStorage.getItem('portra-theme') || 'dark')
+  const [sortMode, setSortMode] = useState(localStorage.getItem('portra-sort') || 'custom')
+  const [dragId, setDragId] = useState(null)
+  const [dropTargetId, setDropTargetId] = useState(null)
+  const dragIdRef = useRef(null)
   const [toast, setToast] = useState(null)
   const [version, setVersion] = useState('')
   const [modal, setModal] = useState(null)
@@ -57,13 +62,21 @@ function App() {
     if (res?.ok === false) notify('Could not reach GitHub to check for updates')
   }
 
+  useEffect(() => { localStorage.setItem('portra-sort', sortMode) }, [sortMode])
+
   const filtered = useMemo(() => {
     const s = q.toLowerCase().trim()
-    if (!s) return data.customers
-    return data.customers.filter(c =>
-      c.name.toLowerCase().includes(s) || c.portals.some(p => p.name.toLowerCase().includes(s))
-    )
-  }, [data, q])
+    const matching = !s
+      ? data.customers
+      : data.customers.filter(c =>
+          c.name.toLowerCase().includes(s) || c.portals.some(p => p.name.toLowerCase().includes(s))
+        )
+    return sortCustomers(matching, sortMode)
+  }, [data, q, sortMode])
+
+  // Dragging rearranges the stored order, so it only makes sense in custom mode — and a filtered
+  // list hides the neighbours you would be dropping between.
+  const canReorder = sortMode === 'custom' && !q.trim()
 
   const stats = useMemo(() => ({
     customers: data.customers.length,
@@ -230,8 +243,59 @@ function App() {
     const res = await window.orbit.openPortal({
       customerId: customer.id, url: portal.url, customerName: customer.name, portalName: portal.name
     })
-    if (res && res.ok === false) notify(res.error || 'Could not open portal')
+    if (res && res.ok === false) {
+      notify(res.error || 'Could not open portal')
+      return
+    }
+    // Counted locally only, to drive the "Most used" sort. Nothing leaves the machine.
+    setData(prev => {
+      const next = structuredClone(prev)
+      const target = next.customers.find(x => x.id === customer.id)
+      if (!target) return prev
+      target.openCount = (target.openCount || 0) + 1
+      target.lastOpenedAt = Date.now()
+      save(next)
+      return next
+    })
   }
+
+  // --- Custom order (drag and drop) ---
+  // The dragged id lives in a ref, not state: dragover and drop can fire in the same tick as
+  // dragstart, and a state update would not be visible to them yet. State is only for styling.
+  const onDragStart = (e, cid) => {
+    dragIdRef.current = cid
+    setDragId(cid)
+    e.dataTransfer.effectAllowed = 'move'
+    // Some browsers refuse to start a drag with no data attached; it also gives us a fallback.
+    e.dataTransfer.setData('text/plain', cid)
+  }
+
+  const draggedId = (e) => dragIdRef.current || e.dataTransfer.getData('text/plain') || null
+
+  const onDragOver = (e, cid) => {
+    const from = draggedId(e)
+    if (!from || from === cid) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDropTargetId(cid)
+  }
+
+  const onDrop = (e, cid) => {
+    e.preventDefault()
+    const from = draggedId(e)
+    if (from && from !== cid) {
+      setData(prev => {
+        const next = { ...prev, customers: moveCustomer(prev.customers, from, cid) }
+        save(next)
+        return next
+      })
+    }
+    dragIdRef.current = null
+    setDragId(null)
+    setDropTargetId(null)
+  }
+
+  const onDragEnd = () => { dragIdRef.current = null; setDragId(null); setDropTargetId(null) }
 
   const signOut = async (customer) => {
     const res = await window.orbit.signOutPortal({ customerId: customer.id, customerName: customer.name })
@@ -301,10 +365,22 @@ function App() {
         </div>
       )}
 
-      <div className="searchWrap">
-        <IconSearch />
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search customers or portals..." />
+      <div className="listControls">
+        <div className="searchWrap">
+          <IconSearch />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search customers or portals..." />
+        </div>
+        <label className="sortWrap">
+          <span>Sort</span>
+          <select value={sortMode} onChange={e => setSortMode(e.target.value)}>
+            {SORT_MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+          </select>
+        </label>
       </div>
+
+      {sortMode === 'custom' && q.trim() && data.customers.length > 1 && (
+        <p className="hint">Clear the search to drag customers into your own order.</p>
+      )}
 
       {filtered.length === 0 && (
         <div className="empty">
@@ -314,8 +390,17 @@ function App() {
 
       <main className="list">
         {filtered.map(c => (
-          <section key={c.id} className="card">
+          <section
+            key={c.id}
+            className={`card${dragId === c.id ? ' dragging' : ''}${dropTargetId === c.id ? ' dropTarget' : ''}`}
+            draggable={canReorder}
+            onDragStart={canReorder ? (e => onDragStart(e, c.id)) : undefined}
+            onDragOver={canReorder ? (e => onDragOver(e, c.id)) : undefined}
+            onDrop={canReorder ? (e => onDrop(e, c.id)) : undefined}
+            onDragEnd={canReorder ? onDragEnd : undefined}
+          >
             <div className="cardHead" onClick={() => setExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
+              {canReorder && <IconGrip />}
               <IconChevron open={expanded[c.id]} />
               <h2>{c.name}</h2>
               <span className="portalCount">{c.portals.length} portal{c.portals.length !== 1 ? 's' : ''}</span>

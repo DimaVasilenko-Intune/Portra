@@ -112,7 +112,28 @@ button.iconBtn {
 button.iconBtn:hover { color: var(--text); background: var(--accentSoft); }
 button.dangerHover:hover { color: var(--danger); background: var(--dangerSoft); }
 
-/* ── Search ── */
+/* ── Search + sort ── */
+.listControls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+.listControls .searchWrap { flex: 1; margin-bottom: 0; }
+
+.sortWrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.sortWrap span { font-size: 12px; font-weight: 600; color: var(--textSoft); }
+.sortWrap select {
+  padding: 10px 12px; border-radius: var(--radius);
+  border: 1px solid var(--inputBorder); background: var(--inputBg);
+  color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: border-color var(--transition);
+}
+.sortWrap select:hover { border-color: var(--accent); }
+.sortWrap select:focus { outline: none; border-color: var(--inputFocus); }
+
+.hint { font-size: 12px; color: var(--textSoft); margin: -10px 0 14px 2px; }
+
+/* ── Drag to reorder ── */
+.grip { color: var(--textSoft); cursor: grab; flex-shrink: 0; }
+.card.dragging { opacity: .45; }
+.card.dropTarget { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
 .searchWrap {
   position: relative; display: flex; align-items: center;
   margin-bottom: 20px;
@@ -313,6 +334,8 @@ button.linkBtn.strong { font-weight: 700; text-decoration: none; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
+  .listControls { flex-direction: column; align-items: stretch; }
+  .sortWrap select { width: 100%; }
   .topbar { flex-direction: column; align-items: flex-start; }
   .portalRow { grid-template-columns: 1fr; }
   .actions { flex-wrap: wrap; }

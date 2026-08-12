@@ -1,11 +1,11 @@
 {
   "name": "portra",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "Portra - secure multi-customer portal workspace",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
-    "test": "node --test \"electron/**/*.test.js\"",
+    "test": "node --test \"electron/**/*.test.js\" \"src/**/*.test.mjs\"",
     "check": "node --check electron/main.js && node --check electron/preload.js && node --check electron/dataFormat.js && npm test",
     "build": "vite build",
     "dist": "npm run build && electron-builder -w -m",

@@ -66,10 +66,17 @@ function sanitizeImportedData(parsed) {
           ? c.portals.find((p) => typeof p?.username === 'string' && p.username.trim())?.username
           : undefined;
 
+        // Usage counters drive the "Most used" sort. Carry them through an import rather than
+        // resetting everyone's history, but treat them as untrusted numbers.
+        const count = Number(c.openCount);
+        const opened = Number(c.lastOpenedAt);
+
         return {
           id: safeCustomerId(c.id, takenIds),
           name: c.name.trim() || 'Customer',
           username: (typeof c.username === 'string' ? c.username : legacyUsername || '').trim(),
+          openCount: Number.isFinite(count) && count > 0 ? Math.floor(count) : 0,
+          lastOpenedAt: Number.isFinite(opened) && opened > 0 ? Math.floor(opened) : 0,
           portals
         };
       })

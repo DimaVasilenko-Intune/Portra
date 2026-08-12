@@ -38,6 +38,29 @@ test('export/import round-trip keeps the customer username', () => {
   assert.deepEqual(imported.customers[0].portals, [{ name: 'Azure', url: 'https://portal.azure.com' }]);
 });
 
+test('usage counters survive an export/import round-trip', () => {
+  const exported = {
+    customers: [{ id: 'c1', name: 'Contoso', openCount: 12, lastOpenedAt: 1755000000000, portals: [] }]
+  };
+  const out = sanitizeImportedData(exported).customers[0];
+  assert.equal(out.openCount, 12);
+  assert.equal(out.lastOpenedAt, 1755000000000);
+});
+
+test('junk usage counters are normalised rather than trusted', () => {
+  const hostile = {
+    customers: [
+      { id: 'a', name: 'Negative', openCount: -5, portals: [] },
+      { id: 'b', name: 'String', openCount: 'lots', portals: [] },
+      { id: 'c', name: 'Infinite', openCount: Infinity, portals: [] },
+      { id: 'd', name: 'Fractional', openCount: 3.7, portals: [] },
+      { id: 'e', name: 'Absent', portals: [] }
+    ]
+  };
+  const counts = sanitizeImportedData(hostile).customers.map((x) => x.openCount);
+  assert.deepEqual(counts, [0, 0, 0, 3, 0]);
+});
+
 test('pre-0.5.1 exports with per-portal usernames are lifted to the customer', () => {
   const legacy = {
     customers: [
