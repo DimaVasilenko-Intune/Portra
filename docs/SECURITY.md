@@ -1,6 +1,6 @@
 # Portra security posture
 
-Assessed 2026-08-12 against 0.6.1 on macOS 26.6.1. Every claim below was measured on a packaged
+Assessed 2026-08-12 against 0.6.2 on macOS 26.6.1. Every claim below was measured on a packaged
 build, and the method is given so it can be re-checked. Where something is not protected, that is
 stated plainly rather than softened.
 
@@ -66,6 +66,53 @@ every tenant you were signed in to.
 An ephemeral-session mode, where nothing is written to disk at all and you sign in each launch,
 would remove this entirely. It is not implemented — see [IMPROVEMENT-PLAN.md](IMPROVEMENT-PLAN.md).
 
+## What leaves your machine
+
+Measured on the packaged 0.6.2 build by polling every Portra process's sockets with `lsof`, and
+by recording every request with the Chrome DevTools Protocol.
+
+**Idle, with no portal open: nothing.** Zero outbound connections over 75 seconds — no telemetry,
+no update ping, no DNS. A full reload of the Portra window itself issues four requests, all
+`file://` inside the app bundle. Nothing remote.
+
+**No crash reporting.** `crashReporter.start()` is never called and no crashpad process runs for
+Portra, so no crash dumps are uploaded anywhere.
+
+**The auto-updater never runs on macOS.** It is skipped before it can contact anything.
+
+Portra's own code has exactly two network paths, and one of them is dead on macOS:
+
+| Path | When | What is sent |
+|---|---|---|
+| `api.github.com/repos/.../releases/latest` | Only when you click "check for updates" or use the menu item | The request itself: your IP, and `User-Agent: Portra/<version>`. No customer data, no usernames, no identifiers |
+| `electron-updater` | Windows only — disabled on macOS | Standard update check |
+
+**When you open a portal, that window is a browser and behaves like one.** Opening the Azure
+portal contacted, and nothing else:
+
+```
+aadcdn.msftauth.net              (sign-in assets)
+login.microsoftonline.com        (Entra sign-in)
+login.live.com                   (Microsoft account endpoint in the sign-in flow)
+portal.azure.com                 (the portal)
+eu-mobile.events.data.microsoft.com   (Microsoft's own page telemetry, EU endpoint)
+```
+
+All Microsoft. No third-party analytics, no non-Microsoft host. The telemetry endpoint is the
+Microsoft *page's* instrumentation, not Portra's — you get exactly the same request opening that
+page in Chrome or Edge. Portra adds nothing to it and removes nothing from it.
+
+**Portra cannot read what you type into a portal.** Portal windows are created with no `preload`
+script, so there is no bridge between page content and the app: `window.orbit` is undefined in a
+portal window (verified), as are `require`, `process` and `module`. The entire IPC surface
+available to the *app* window is eleven functions — load/save/export/import data, open or sign out
+of a portal, and read the version, platform and update status. None of them can reach into a
+portal page, and no code reads form fields or keystrokes.
+
+The one thing Microsoft sees differently from a real browser is the user agent, which claims
+Chrome on macOS rather than Electron. That is deliberate, so sign-in offers passkey and
+security-key options.
+
 ## Isolation between customers
 
 The product's core promise is that one customer's session cannot reach another's. It holds, with a
@@ -117,9 +164,16 @@ wired for it. See [MACOS.md](MACOS.md).
 
 ## Honest summary
 
+Nothing leaks outward. Idle, Portra makes no network connections at all — no telemetry, no crash
+reports, no phone-home — and when you open a portal, the only hosts contacted are Microsoft's, the
+same ones any browser would contact. Portra has no way to read what you type into a portal.
+
+The exposure is **local, not outbound**: session credentials sitting unencrypted on your own disk,
+and an app whose integrity nothing verifies.
+
 Portra is solid on the things it controls: no password handling, encrypted app data, real session
-isolation, a properly locked-down renderer. It is **not** bulletproof, and two of the reasons are
-outside its code:
+isolation, a properly locked-down renderer, no egress. It is **not** bulletproof, and two of the
+reasons are outside its code:
 
 1. Chromium-in-Electron stores session cookies unencrypted, and Electron gives no way to change
    that. Mitigate by signing out of idle workspaces and leaning on Conditional Access sign-in
