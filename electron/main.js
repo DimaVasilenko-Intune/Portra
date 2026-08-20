@@ -92,7 +92,19 @@ function chromeUserAgent() {
 
 // Permissions a Microsoft admin portal legitimately needs. Everything else is denied —
 // portal windows load arbitrary remote content, so blanket approval is not acceptable.
-const ALLOWED_PERMISSIONS = new Set(['clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'hid', 'usb']);
+//
+// 'bluetooth' is here for sign-in, not for pages that want to talk to gadgets: the passkey
+// hybrid transport ("use your phone") reaches the phone over BLE, and denying this leaves the
+// user stuck on Entra's "the device will open a security window" screen with no window ever
+// appearing. The matching Info.plist usage string is already shipped for the same reason.
+const ALLOWED_PERMISSIONS = new Set([
+  'clipboard-read',
+  'clipboard-sanitized-write',
+  'fullscreen',
+  'hid',
+  'usb',
+  'bluetooth'
+]);
 
 const configuredSessions = new Set();
 
@@ -107,8 +119,9 @@ function configureSession(ses) {
   });
   ses.setPermissionCheckHandler((_wc, permission) => ALLOWED_PERMISSIONS.has(permission));
 
-  // Security keys (YubiKey and similar) are exposed over HID/USB.
-  ses.setDevicePermissionHandler(({ deviceType }) => deviceType === 'hid' || deviceType === 'usb');
+  // Security keys reach us over HID/USB when plugged in, and over BLE for phone-as-passkey.
+  const AUTHENTICATOR_TRANSPORTS = new Set(['hid', 'usb', 'bluetooth']);
+  ses.setDevicePermissionHandler(({ deviceType }) => AUTHENTICATOR_TRANSPORTS.has(deviceType));
 }
 
 function createPortalWindow(ses, title) {
