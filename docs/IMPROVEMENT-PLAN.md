@@ -44,7 +44,7 @@ authenticator. Details and workarounds in [MACOS.md](MACOS.md).
 
 | # | Finding | Why it was left |
 |---|---|---|
-| 20 | Electron 40.10.6 → 43.4.0 (three Chromium majors behind) | Needs its own regression pass. 40.10.6 closes nearly all outstanding advisories at patch-level risk |
+| 20 | Electron 40.10.6 → 43.4.0 (three Chromium majors behind) | Needs its own regression pass. 40.10.6 closes nearly all outstanding advisories at patch-level risk. Dependabot now raises the PR so the gap stops going unnoticed |
 | 21 | Portal windows can navigate to any https host | An allowlist of Microsoft sign-in and portal domains would be tighter, but risks blocking legitimate federated IdPs. Needs a decision on scope |
 | 22 | No renderer tests | The React layer is verified manually. Worth adding once the UI settles |
 | 23 | No way to clear a workspace session | There is no "sign out of this customer" action; `session.clearStorageData()` per partition would provide it |
@@ -81,7 +81,14 @@ authenticator. Details and workarounds in [MACOS.md](MACOS.md).
 
 ### Then — quality, in priority order
 
-6. Electron 43.x upgrade with a re-run of the verification in this review.
+6. Electron 43.x upgrade with a re-run of the verification in this review. Dependabot opens the
+   PR weekly; merging is still a judgement call, since a Chromium major can change window,
+   session or WebAuthn behaviour.
+
+   Worth being clear about the whole chain: Portra bundles its own Chromium, so a user's Edge
+   patches do nothing for it. Detection is now automated, review is human, and delivery reaches
+   Windows users through the auto-updater — but **not macOS users, because the app is unsigned**.
+   Until signing lands, a security bump only actually ships to part of the user base.
 7. Per-workspace "sign out" using `session.clearStorageData()`, plus a visible indicator of
    which workspaces currently hold a live session. This is the feature that makes the isolation
    story legible to the user rather than implicit.
