@@ -92,6 +92,11 @@ FileVault on, and set a Conditional Access sign-in frequency.
 could modify the app without macOS objecting. Signing is a pending decision, see
 [docs/MACOS.md](docs/MACOS.md).
 
+**On macOS, passkeys do not work at all** — not Touch ID, and not phone-as-passkey. Electron does
+not implement Chromium's authenticator picker, so the sign-in page hangs on "the device will open a
+security window" and never recovers. Sign in with a password plus a non-passkey MFA factor. If a
+tenant enforces phishing-resistant MFA, Portra cannot reach it and you need a real browser.
+
 ### Platform differences worth knowing
 
 | | Windows | macOS |
@@ -99,8 +104,10 @@ could modify the app without macOS objecting. Signing is a pending decision, see
 | Install | Double-click. Not signed with a trusted publisher, so SmartScreen may warn | Unsigned — one `xattr` command, or build locally ([details](docs/MACOS.md)) |
 | Automatic updates | Yes | Disabled until the app is signed. Portra says so in the footer and offers a manual check (also under **Portra → Check for Updates…**) |
 | Windows Hello | Yes | n/a |
-| Touch ID / iCloud Keychain passkey | n/a | **Not supported** — Electron does not expose the macOS platform authenticator |
-| Security key (YubiKey, USB) | Yes | Yes |
+| Touch ID / iCloud Keychain passkey | n/a | **No** — Electron does not expose the macOS platform authenticator |
+| Phone as passkey (QR) | Yes | **No** — no picker UI, so the request hangs ([details](docs/MACOS.md)) |
+| Security key (YubiKey, USB) | Yes | Unverified |
+| Working sign-in method | Any | Password plus a non-passkey MFA factor |
 
 ## Run from source
 

@@ -98,24 +98,41 @@ codesign -dv --verbose=2 release/mac-universal/Portra.app # expect: Authority=De
 
 ## Passkeys and security keys on macOS
 
-Measured against the Entra sign-in page in a packaged build (Electron 40.10.6, Chromium 144):
+Measured against the Entra sign-in page in a packaged build (Electron 43.4.0, Chromium 150 — the same results hold on Electron 40 / Chromium 144, so the Chromium version is not the blocker):
 
 | Capability | Status |
 |---|---|
 | WebAuthn API present | Yes |
 | Conditional mediation (passkey autofill) | Yes |
 | **Platform authenticator (Touch ID / iCloud Keychain)** | **No** — `isUserVerifyingPlatformAuthenticatorAvailable()` returns `false` |
-| Security key over USB/HID (YubiKey and similar) | Yes |
-| Phone as passkey (QR / hybrid transport) | Expected to work; not yet verified end to end |
+| Security key over USB/HID (YubiKey and similar) | Unverified — plausible, but not tested against hardware |
+| **Phone as passkey (QR / hybrid transport)** | **No** — the capability is reported, but there is no UI to drive it, so the request hangs forever |
 
-Electron does not expose the macOS platform authenticator, so **Touch ID cannot be used to sign
-in from inside Portra**. Whether this can be enabled at all needs confirmation upstream — using
-the macOS system passkey store normally requires Apple's
-`com.apple.developer.web-browser.public-key-credential` entitlement, which Apple grants only to
-browser apps.
+**In practice, no passkey method works in Portra on macOS.** Two separate causes:
 
-Until that is resolved, macOS users should sign in with a security key, a phone passkey, or
-password plus MFA. This differs from Windows, where Windows Hello works.
+Touch ID and iCloud Keychain are unavailable because Electron does not expose the macOS platform
+authenticator. Reaching the system passkey store normally requires Apple's
+`com.apple.developer.web-browser.public-key-credential` entitlement, granted to browser apps only.
+
+Phone-as-passkey fails for a different and less obvious reason. `getClientCapabilities()` reports
+`hybridTransport: true`, and `navigator.bluetooth.getAvailability()` returns true, so the transport
+is there. But Electron does not implement Chromium's WebAuthn picker — the dialog that lets you
+choose "use a phone" and shows the QR code. Measured: `navigator.credentials.get()` with
+`hints: ['hybrid','security-key']` opens no window and **never settles, not even after its own
+timeout expires**. Entra's "the device will open a security window" screen therefore hangs
+indefinitely, which is exactly what a user reported.
+
+A plugged-in USB security key may still work, since Chromium can poll it without showing a picker,
+but that has not been verified against real hardware — do not promise it.
+
+**So the working sign-in method on macOS is password plus a non-passkey MFA factor.** If a tenant
+enforces phishing-resistant MFA through Conditional Access, Portra cannot sign in to it at all, and
+that account has to use a real browser. This is a hard limitation, not a rough edge, and it differs
+sharply from Windows, where Windows Hello works.
+
+None of this is fixable inside Portra. Electron exposes no hook for the authenticator picker, and
+handing sign-in to the system browser would not help, because the session would land in that
+browser's profile rather than the workspace partition that is the whole point.
 
 ## Data location
 
